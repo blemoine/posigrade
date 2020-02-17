@@ -1,0 +1,15 @@
+{
+  "name": "pg-fn",
+  "version": "0.0.1",
+  "description": "A library to simplify pg connection handling",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "keywords": [
+    "postgres",
+    "pg"
+  ],
+  "author": "Benoit Lemoine",
+  "license": "MIT"
+}
