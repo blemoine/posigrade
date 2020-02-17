@@ -4,12 +4,28 @@
   "description": "A library to simplify pg connection handling",
   "main": "index.js",
   "scripts": {
-    "test": "jest"
+    "ci:test": "npm run typecheck && npm run test -- --ci && npm run lint",
+    "clean": "rm -rf dist .cache node_modules coverage",
+    "lint": "eslint './src/**/*.ts'",
+    "test": "jest",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [
     "postgres",
     "pg"
   ],
   "author": "Benoit Lemoine",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^13.7.1",
+    "@typescript-eslint/eslint-plugin": "^2.19.2",
+    "@typescript-eslint/parser": "^2.19.2",
+    "eslint": "^6.8.0",
+    "eslint-config-prettier": "^6.10.0",
+    "eslint-plugin-prettier": "^3.1.2",
+    "jest": "^25.1.0",
+    "prettier": "^1.19.1",
+    "ts-jest": "^25.2.0",
+    "typescript": "^3.7.5"
+  }
 }
