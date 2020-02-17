@@ -17,6 +17,7 @@
   "author": "Benoit Lemoine",
   "license": "MIT",
   "devDependencies": {
+    "@types/jest": "^25.1.2",
     "@types/node": "^13.7.1",
     "@types/pg": "^7.14.1",
     "@typescript-eslint/eslint-plugin": "^2.19.2",
