@@ -10,5 +10,8 @@ module.exports = {
     ecmaVersion: 2019,
     sourceType: 'module',
   },
-  rules: {},
+  rules: {
+    '@typescript-eslint/no-unused-vars': 'off',
+    '@typescript-eslint/no-explicit-any': 'off',
+  },
 };

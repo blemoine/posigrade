@@ -13,7 +13,7 @@ describe('sql-query', () => {
   afterAll(() => {
     client.end();
   });
-  test('it should create a simple ConnectionIO executing the query', async () => {
+  test('should create a simple ConnectionIO executing the query', async () => {
     const query = new SqlQuery({ text: 'SELECT 12 UNION SELECT 678' });
     const result = await query.list(deser.toInteger).run(client);
 

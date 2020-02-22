@@ -1,5 +1,5 @@
 export class Success<T> {
-  static of<T>(value: T) {
+  static of<T>(value: T): Success<T> {
     return new Success(value);
   }
   constructor(public readonly value: T) {}
