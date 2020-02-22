@@ -31,6 +31,7 @@
     "typescript": "^3.7.5"
   },
   "dependencies": {
-    "pg": "^7.18.1"
+    "pg": "^7.18.1",
+    "testcontainers": "^2.4.0"
   }
 }

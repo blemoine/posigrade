@@ -1,19 +1,11 @@
-//import {SqlDeserializer} from "../serde/SqlDeserializer";
-
-import {QueryConfig} from "pg";
+import { SqlQuery } from './sql-query';
 
 type SupportedValueType = string | number | boolean;
 
-export class Sql {
-  constructor(public queryConfig: QueryConfig) {}
-
-//  list<A>(deserializer: SqlDeserializer<A> ): ConnectionIO<List<A>>
-}
-
-export function sql(strings: TemplateStringsArray, ...values: SupportedValueType[]): Sql {
+export function sql(strings: TemplateStringsArray, ...values: SupportedValueType[]): SqlQuery {
   const text = strings.reduce((currText, str, i) => {
     return currText + '$' + i + str;
   });
 
-  return new Sql({ text, values });
+  return new SqlQuery({ text, values });
 }
