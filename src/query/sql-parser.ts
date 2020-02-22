@@ -1,7 +1,13 @@
+//import {SqlDeserializer} from "../serde/SqlDeserializer";
+
+import {QueryConfig} from "pg";
+
 type SupportedValueType = string | number | boolean;
 
 export class Sql {
-  constructor(public text: string, public values: SupportedValueType[]) {}
+  constructor(public queryConfig: QueryConfig) {}
+
+//  list<A>(deserializer: SqlDeserializer<A> ): ConnectionIO<List<A>>
 }
 
 export function sql(strings: TemplateStringsArray, ...values: SupportedValueType[]): Sql {
@@ -9,5 +15,5 @@ export function sql(strings: TemplateStringsArray, ...values: SupportedValueType
     return currText + '$' + i + str;
   });
 
-  return { text, values };
+  return new Sql({ text, values });
 }
