@@ -1,4 +1,4 @@
-import { deser } from './SqlDeserializer';
+import { deser, sequenceDeser } from './SqlDeserializer';
 import { Success } from '../result/Result';
 
 describe('SqlDeserialize', () => {
@@ -8,5 +8,13 @@ describe('SqlDeserialize', () => {
     const result = pair.deserialize(['Georges', 12]);
 
     expect(result).toStrictEqual(Success.of(['Georges', 12]));
+  });
+
+  it('should be able to combine multiple deserializers', () => {
+    const tuple = sequenceDeser(deser.toString, deser.toInteger, deser.toInteger, deser.toString);
+
+    const result = tuple.deserialize(['Georges', 12, 45, 'Abitbol']);
+
+    expect(result).toStrictEqual(Success.of(['Georges', 12, 45, 'Abitbol']));
   });
 });
