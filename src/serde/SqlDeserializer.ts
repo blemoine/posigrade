@@ -19,6 +19,16 @@ export class SqlDeserializer<T> {
     }, this.currentIdxSize + 1);
   }
 
+  or<B>(sqlDeserializer: SqlDeserializer<B>): SqlDeserializer<T | B> {
+    return new SqlDeserializer<T | B>((row: unknown[], idx: number): Result<T | B> => {
+      const v1 = this._deserialize(row, idx);
+      if (v1 instanceof Success) {
+        return v1;
+      }
+      return sqlDeserializer._deserialize(row, idx);
+    }, this.currentIdxSize);
+  }
+
   zipWith<B, C>(sqlDeserializer: SqlDeserializer<B>, cb: (t: T, b: B) => C): SqlDeserializer<C> {
     return this.zip(sqlDeserializer).map(([t, b]) => cb(t, b));
   }
@@ -54,9 +64,22 @@ const toString: SqlDeserializer<string> = new SqlDeserializer<string>((row: unkn
   }
 }, 1);
 
+const toNull: SqlDeserializer<null> = new SqlDeserializer<null>((row: unknown[], idx: number): Result<null> => {
+  if (row.length < 1) {
+    return Failure.raise('There must be at least one row');
+  }
+  const value = row[idx];
+  if (value === null) {
+    return Success.of(null);
+  } else {
+    return Failure.raise(`'${value}' is not null`);
+  }
+}, 1);
+
 export const deser = {
   toInteger,
   toString,
+  toNull,
 };
 
 export function sequenceDeser<D, A extends Array<D>>(

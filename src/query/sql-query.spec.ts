@@ -19,4 +19,23 @@ describe('sql-query', () => {
 
     expect(result).toStrictEqual([12, 678]);
   });
+
+  describe('unique', () => {
+    test('should return one unique value from a query', async () => {
+      const query = new SqlQuery({ text: 'SELECT 12' });
+      const result = await query.unique(deser.toInteger).run(client);
+
+      expect(result).toStrictEqual(12);
+    });
+
+    test('should fail if there more than one row', async () => {
+      const query = new SqlQuery({ text: 'SELECT 12 UNION SELECT 987' });
+      try {
+        await query.unique(deser.toInteger).run(client);
+        fail('This call should fail');
+      } catch (e) {
+        expect(e.message).toStrictEqual('Query SELECT 12 UNION SELECT 987 returns more than one row');
+      }
+    });
+  });
 });

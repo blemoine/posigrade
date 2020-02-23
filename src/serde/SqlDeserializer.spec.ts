@@ -17,4 +17,16 @@ describe('SqlDeserialize', () => {
 
     expect(result).toStrictEqual(Success.of(['Georges', 12, 45, 'Abitbol']));
   });
+
+  it('should be able to combine deserializers with a or', () => {
+    const strOrNull = deser.toString.or(deser.toNull);
+
+    const result = strOrNull.deserialize(['Georges']);
+
+    expect(result).toStrictEqual(Success.of('Georges'));
+
+    const result2 = strOrNull.deserialize([null]);
+
+    expect(result2).toStrictEqual(Success.of(null));
+  });
 });
