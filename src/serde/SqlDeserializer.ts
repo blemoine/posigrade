@@ -22,10 +22,8 @@ export class SqlDeserializer<T> {
   or<B>(sqlDeserializer: SqlDeserializer<B>): SqlDeserializer<T | B> {
     return new SqlDeserializer<T | B>((row: unknown[], idx: number): Result<T | B> => {
       const v1 = this._deserialize(row, idx);
-      if (v1 instanceof Success) {
-        return v1;
-      }
-      return sqlDeserializer._deserialize(row, idx);
+
+      return v1.recover(() => sqlDeserializer._deserialize(row, idx));
     }, this.currentIdxSize);
   }
 

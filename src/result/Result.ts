@@ -12,6 +12,10 @@ export class Success<T> {
     return this.value;
   }
 
+  recover<B>(_fn: () => Result<B>): Result<T | B> {
+    return this;
+  }
+
   zip<B>(result: Result<B>): Result<[T, B]> {
     return result.map((b) => [this.value, b]);
   }
@@ -28,6 +32,10 @@ export class Failure<T> {
   getOrThrow(): T {
     throw new Error(this.messages.join(', '));
   }
+  recover<B>(fn: () => Result<B>): Result<T | B> {
+    return fn();
+  }
+
   zip<B>(result: Result<B>): Result<[T, B]> {
     if (result instanceof Failure) {
       return new Failure([...this.messages, ...result.messages]);
