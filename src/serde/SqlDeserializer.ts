@@ -38,43 +38,37 @@ export class SqlDeserializer<T> {
   }
 }
 
-const toInteger: SqlDeserializer<number> = new SqlDeserializer<number>((row: unknown[], idx: number): Result<
-  number
-> => {
-  if (row.length < 1) {
-    return Failure.raise('There must be at least one row');
-  }
-  const value = row[idx];
-  if (typeof value === 'number' && Number.isInteger(value)) {
-    return Success.of(value);
-  } else {
-    return Failure.raise(`'${value}' is not an integer`);
-  }
-}, 1);
+function basicSerializer<A>(
+  guard: (x: unknown) => x is A,
+  errorMessage: (value: unknown) => string
+): SqlDeserializer<A> {
+  return new SqlDeserializer<A>((row: unknown[], idx: number): Result<A> => {
+    if (row.length < 1) {
+      return Failure.raise('There must be at least one row');
+    }
+    const value = row[idx];
+    if (guard(value)) {
+      return Success.of(value);
+    } else {
+      return Failure.raise(errorMessage(value));
+    }
+  }, 1);
+}
 
-const toString: SqlDeserializer<string> = new SqlDeserializer<string>((row: unknown[], idx: number): Result<string> => {
-  if (row.length < 1) {
-    return Failure.raise('There must be at least one row');
-  }
-  const value = row[idx];
-  if (typeof value === 'string') {
-    return Success.of(value);
-  } else {
-    return Failure.raise(`'${value}' is not an string`);
-  }
-}, 1);
+const toInteger: SqlDeserializer<number> = basicSerializer<number>(
+  (value): value is number => typeof value === 'number' && Number.isInteger(value),
+  (value) => `'${value}' is not an integer`
+);
 
-const toNull: SqlDeserializer<null> = new SqlDeserializer<null>((row: unknown[], idx: number): Result<null> => {
-  if (row.length < 1) {
-    return Failure.raise('There must be at least one row');
-  }
-  const value = row[idx];
-  if (value === null) {
-    return Success.of(null);
-  } else {
-    return Failure.raise(`'${value}' is not null`);
-  }
-}, 1);
+const toString: SqlDeserializer<string> = basicSerializer<string>(
+  (value): value is string => typeof value === 'string',
+  (value) => `'${value}' is not an string`
+);
+
+const toNull: SqlDeserializer<null> = basicSerializer<null>(
+  (value): value is null => value === null,
+  (value) => `'${value}' is not null`
+);
 
 export const deser = {
   toInteger,
