@@ -68,9 +68,15 @@ const toNull: SqlDeserializer<null> = basicSerializer<null>(
   (value) => `'${value}' is not null`
 );
 
+const toDate: SqlDeserializer<Date> = basicSerializer<Date>(
+  (value): value is Date => value instanceof Date,
+  (value) => `'${value}' is not a Date`
+);
+
 export const deser = {
   toInteger,
   toString,
+  toDate,
   toNull,
 };
 

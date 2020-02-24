@@ -26,4 +26,8 @@ export class SqlQuery {
       return deserializer.deserialize(rows[0]).getOrThrow();
     });
   }
+
+  update(): ConnectionIO<void> {
+    return mkConnectionIO(this.queryConfig).map(() => {});
+  }
 }
