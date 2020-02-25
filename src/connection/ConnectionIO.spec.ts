@@ -1,16 +1,15 @@
-import { Client } from 'pg';
+import { Pool } from 'pg';
 import { ConnectionIO } from './ConnectionIO';
 
 describe('ConnectionIO', () => {
-  let client: Client;
+  let pool: Pool;
   beforeAll(async () => {
-    client = new Client({
+    pool = new Pool({
       connectionString: process.env.DATABASE_URL,
     });
-    await client.connect();
   });
   afterAll(() => {
-    client.end();
+    pool.end();
   });
   test('should form a monad', async () => {
     const c1 = new ConnectionIO((client) => client.query('SELECT 45 as n')).map(({ rows }) => rows[0].n);
@@ -18,7 +17,7 @@ describe('ConnectionIO', () => {
       new ConnectionIO((client) => client.query('SELECT 36 as n')).map(({ rows }) => rows[0].n + x)
     );
 
-    const result = await c2.run(client);
+    const result = await c2.transact(pool);
 
     expect(result).toBe(81);
   });

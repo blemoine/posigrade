@@ -1,7 +1,7 @@
 import { ClientBase, Pool } from 'pg';
 
 export class ConnectionIO<A> {
-  constructor(public run: (client: ClientBase) => Promise<A>) {}
+  constructor(private run: (client: ClientBase) => Promise<A>) {}
 
   map<B>(mapper: (a: A) => B): ConnectionIO<B> {
     const parentRun = this.run;

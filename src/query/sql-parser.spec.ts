@@ -1,17 +1,16 @@
 import { sql } from './sql-parser';
 import { deser } from '../serde/SqlDeserializer';
-import { Client } from 'pg';
+import { Pool } from 'pg';
 
 describe('sql', () => {
-  let client: Client;
+  let pool: Pool;
   beforeAll(async () => {
-    client = new Client({
+    pool = new Pool({
       connectionString: process.env.DATABASE_URL,
     });
-    await client.connect();
   });
   afterAll(() => {
-    client.end();
+    pool.end();
   });
   it('should parse a SQL query without parameters', () => {
     const result = sql`SELECT COUNT(*) FROM users`;
@@ -38,7 +37,7 @@ describe('sql', () => {
     const name = 'Georges';
 
     const query = sql`SELECT ${name}`;
-    const result = await query.list(deser.toString).run(client);
+    const result = await query.list(deser.toString).transact(pool);
 
     expect(result).toStrictEqual(['Georges']);
   });
