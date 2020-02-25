@@ -181,7 +181,9 @@ export function sequenceDeser<D, A extends Array<D>>(
 ): PositionSqlDeserializer<{ [K in keyof A]: A[K] extends PositionSqlDeserializer<infer U> ? U : never }> {
   return arr.reduce<PositionSqlDeserializer<Array<unknown>>>((acc, deser) => {
     return acc.zipWith(deser as any, (a, b) => [...a, b]);
-  }, new PositionSqlDeserializer(() => Success.of([]), 0)) as any;
+  }, new PositionSqlDeserializer(() => Success.of([]), 0)) as PositionSqlDeserializer<
+    { [K in keyof A]: A[K] extends PositionSqlDeserializer<infer U> ? U : never }
+  >;
 }
 
 export function sequenceDeserRecord<A extends { [key: string]: any }>(
@@ -189,5 +191,7 @@ export function sequenceDeserRecord<A extends { [key: string]: any }>(
 ): NamedSqlDeserializer<{ [K in keyof A]: A[K] extends NamedSqlDeserializer<infer U> ? U : never }> {
   return Object.entries(obj).reduce<NamedSqlDeserializer<{ [key: string]: unknown }>>((acc, [key, deser]) => {
     return acc.zipWith(deser, (a, b) => ({ ...a, [key]: b }));
-  }, new NamedSqlDeserializer(() => Success.of({}))) as any;
+  }, new NamedSqlDeserializer(() => Success.of({}))) as NamedSqlDeserializer<
+    { [K in keyof A]: A[K] extends NamedSqlDeserializer<infer U> ? U : never }
+  >;
 }
