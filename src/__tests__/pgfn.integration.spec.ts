@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
 import { sql } from '../query/sql-parser';
-import { deser, sequenceDeser } from '../serde/SqlDeserializer';
+import { deser, namedDeser, sequenceDeser, sequenceDeserRecord } from '../serde/SqlDeserializer';
 
 describe('sql-query', () => {
   let pool: Pool;
@@ -30,5 +30,30 @@ describe('sql-query', () => {
       [1, carName, date],
       [2, null, date2],
     ]);
+  });
+
+  test('should support an easy creation of object', async () => {
+    const animalSpecies = 'rat';
+    const date = new Date('2020-02-03T05:06:07Z');
+
+    const animalDeserializer = sequenceDeserRecord({
+      id: namedDeser.toInteger('id'),
+      species: namedDeser.toString('species'),
+      creationDate: namedDeser.toDate('date'),
+    });
+
+    const createAnimalTable = sql`CREATE TABLE animals ( id SERIAL, species TEXT, date TIMESTAMPTZ)`.update();
+    const insertAnimal = sql`INSERT INTO animals(species, date) VALUES (${animalSpecies}, ${date})`.update();
+    const selectFirstAnimal = sql`SELECT id, species, date FROM animals LIMIT 1`.unique(animalDeserializer);
+
+    const cio = createAnimalTable.flatMap(() => insertAnimal).flatMap(() => selectFirstAnimal);
+
+    const result = await cio.transact(pool);
+
+    expect(result).toStrictEqual({
+      id: 1,
+      species: animalSpecies,
+      creationDate: date,
+    });
   });
 });
