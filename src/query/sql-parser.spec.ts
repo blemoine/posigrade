@@ -1,5 +1,5 @@
 import { sql } from './sql-parser';
-import { deser } from '../serde/SqlDeserializer';
+import { deser, namedDeser } from '../serde/SqlDeserializer';
 import { Pool } from 'pg';
 
 describe('sql', () => {
@@ -72,6 +72,27 @@ describe('sql', () => {
     } catch (e) {
       expect(e).toBeInstanceOf(Error);
       expect(e.message).toStrictEqual("'test' is not a Date, '12' is not an string");
+    }
+  });
+
+  it('should display explicit error message if trying to get by name a column with the wrong type', async () => {
+    const query = sql`SELECT 12 as id`;
+    try {
+      await query.list(namedDeser.toString('id')).transact(pool);
+      fail('This call should fail');
+    } catch (e) {
+      expect(e).toBeInstanceOf(Error);
+      expect(e.message).toStrictEqual("Column 'id': '12' is not an string");
+    }
+  });
+  it('should display explicit error message if trying to get by name a column that does not exist', async () => {
+    const query = sql`SELECT 12 as id`;
+    try {
+      await query.list(namedDeser.toString('name')).transact(pool);
+      fail('This call should fail');
+    } catch (e) {
+      expect(e).toBeInstanceOf(Error);
+      expect(e.message).toStrictEqual("No column named 'name' exists in the list of cols 'id'");
     }
   });
 });
