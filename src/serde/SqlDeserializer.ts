@@ -124,8 +124,8 @@ const basicNamedSerializer = <A>({ guard, errorMessage }: DeserDefinition<A>) =>
 
 function basicPositionSerializer<A>({ guard, errorMessage }: DeserDefinition<A>): PositionSqlDeserializer<A> {
   return new PositionSqlDeserializer<A>((row: unknown[], idx: number): Result<A> => {
-    if (row.length < idx) {
-      return Failure.raise(`There must be at least ${idx} row`);
+    if (row.length <= idx) {
+      return Failure.raise(`There must be at least ${idx} values in a row`);
     }
 
     const value = row[idx];

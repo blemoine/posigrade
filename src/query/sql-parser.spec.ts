@@ -52,4 +52,15 @@ describe('sql', () => {
       expect(e.message).toStrictEqual("'12' is not an string");
     }
   });
+
+  it('should display explicit error message if trying to get by position a column that does not exist ', async () => {
+    const query = sql`SELECT '12'`;
+    try {
+      await query.list(deser.toString.zip(deser.toInteger)).transact(pool);
+      fail('This call should fail');
+    } catch (e) {
+      expect(e).toBeInstanceOf(Error);
+      expect(e.message).toStrictEqual('There must be at least 1 values in a row');
+    }
+  });
 });
