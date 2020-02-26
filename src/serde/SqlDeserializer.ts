@@ -82,82 +82,71 @@ export class PositionSqlDeserializer<T> {
   }
 }
 
-function basicSerializer<A, C extends string | 0>(
-  col: C,
-  guard: (x: unknown) => x is A,
-  errorMessage: (value: unknown) => string
-): C extends 0 ? PositionSqlDeserializer<A> : NamedSqlDeserializer<A> {
-  if (col === 0) {
-    return new PositionSqlDeserializer<A>((row: unknown[], idx: number): Result<A> => {
-      if (row.length < 1) {
-        return Failure.raise('There must be at least one row');
-      }
-      const value = row[idx];
+type DeserDefinition<A> = {
+  guard: (x: unknown) => x is A;
+  errorMessage: (value: unknown) => string;
+};
+
+const toInteger: DeserDefinition<number> = {
+  guard: (value): value is number => typeof value === 'number' && Number.isInteger(value),
+  errorMessage: (value) => `'${value}' is not an integer`,
+};
+const toString: DeserDefinition<string> = {
+  guard: (value): value is string => typeof value === 'string',
+  errorMessage: (value) => `'${value}' is not an string`,
+};
+const toNull: DeserDefinition<null> = {
+  guard: (value): value is null => value === null,
+  errorMessage: (value) => `'${value}' is not null`,
+};
+const toDate: DeserDefinition<Date> = {
+  guard: (value): value is Date => value instanceof Date,
+  errorMessage: (value) => `'${value}' is not a Date`,
+};
+
+const basicNamedSerializer = <A>({ guard, errorMessage }: DeserDefinition<A>) => (
+  col: string
+): NamedSqlDeserializer<A> => {
+  return new NamedSqlDeserializer<A>(
+    (row: RowObject): Result<A> => {
+      const value = row[col];
       if (guard(value)) {
         return Success.of(value);
       } else {
         return Failure.raise(errorMessage(value));
       }
-    }, 1) as C extends 0 ? PositionSqlDeserializer<A> : NamedSqlDeserializer<A>;
-  } else {
-    return new NamedSqlDeserializer<A>(
-      (row: RowObject): Result<A> => {
-        const value = row[col];
-        if (guard(value)) {
-          return Success.of(value);
-        } else {
-          return Failure.raise(errorMessage(value));
-        }
-      }
-    ) as C extends 0 ? PositionSqlDeserializer<A> : NamedSqlDeserializer<A>;
-  }
+    }
+  );
+};
+
+function basicPositionSerializer<A>({ guard, errorMessage }: DeserDefinition<A>): PositionSqlDeserializer<A> {
+  return new PositionSqlDeserializer<A>((row: unknown[], idx: number): Result<A> => {
+    if (row.length < idx) {
+      return Failure.raise(`There must be at least ${idx} row`);
+    }
+
+    const value = row[idx];
+    if (guard(value)) {
+      return Success.of(value);
+    } else {
+      return Failure.raise(errorMessage(value));
+    }
+  }, 1);
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-const toInteger = <C extends string | 0>(col: C) =>
-  basicSerializer<number, C>(
-    col,
-    (value): value is number => typeof value === 'number' && Number.isInteger(value),
-    (value) => `'${value}' is not an integer`
-  );
-
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-const toString = <C extends string | 0>(col: C) =>
-  basicSerializer<string, C>(
-    col,
-    (value): value is string => typeof value === 'string',
-    (value) => `'${value}' is not an string`
-  );
-
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-const toNull = <C extends string | 0>(col: C) =>
-  basicSerializer<null, C>(
-    col,
-    (value): value is null => value === null,
-    (value) => `'${value}' is not null`
-  );
-
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-const toDate = <C extends string | 0>(col: C) =>
-  basicSerializer<Date, C>(
-    col,
-    (value): value is Date => value instanceof Date,
-    (value) => `'${value}' is not a Date`
-  );
-
 export const deser = {
-  toInteger: toInteger(0),
-  toString: toString(0),
-  toDate: toDate(0),
-  toNull: toNull(0),
-};
+  toInteger: basicPositionSerializer(toInteger),
+  toString: basicPositionSerializer(toString),
+  toDate: basicPositionSerializer(toDate),
+  toNull: basicPositionSerializer(toNull),
+} as const;
 
 export const namedDeser = {
-  toInteger,
-  toString,
-  toDate,
-  toNull,
-};
+  toInteger: basicNamedSerializer(toInteger),
+  toString: basicNamedSerializer(toString),
+  toDate: basicNamedSerializer(toDate),
+  toNull: basicNamedSerializer(toNull),
+} as const;
 
 export function sequenceDeser<D, A extends Array<D>>(
   ...arr: A
