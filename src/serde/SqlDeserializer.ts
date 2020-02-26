@@ -1,25 +1,14 @@
 import { Failure, Result, Success } from '../result/Result';
 
-export interface SqlDeserializer<T, R extends unknown[] | { [key: string]: unknown } = any> {
-  map<B>(mapper: (t: T) => B): SqlDeserializer<B, R>;
-
-  zip<B>(sqlDeserializer: SqlDeserializer<B, R>): SqlDeserializer<[T, B], R>;
-
-  or<B>(sqlDeserializer: SqlDeserializer<B, R>): SqlDeserializer<T | B, R>;
-
-  zipWith<B, C>(sqlDeserializer: SqlDeserializer<B, R>, cb: (t: T, b: B) => C): SqlDeserializer<C, R>;
-
-  deserialize(row: R): Result<T>;
-
-  rowMode(): 'array' | 'object';
-}
+export type SqlDeserializer<T> = NamedSqlDeserializer<T> | PositionSqlDeserializer<T>;
 
 type RowObject = { [p: string]: unknown };
 
-export class NamedSqlDeserializer<T> implements SqlDeserializer<T, RowObject> {
-  constructor(private _deserialize: (row: { [key: string]: unknown }) => Result<T>) {}
+export class NamedSqlDeserializer<T> {
+  rowMode: 'object' = 'object';
+  constructor(private _deserialize: (row: RowObject) => Result<T>) {}
 
-  deserialize(row: RowObject): Success<T> | Failure<T> {
+  deserialize(row: RowObject): Result<T> {
     return this._deserialize(row);
   }
 
@@ -54,13 +43,10 @@ export class NamedSqlDeserializer<T> implements SqlDeserializer<T, RowObject> {
   zipWith<B, C>(sqlDeserializer: NamedSqlDeserializer<B>, cb: (t: T, b: B) => C): NamedSqlDeserializer<C> {
     return this.zip(sqlDeserializer).map(([t, b]) => cb(t, b));
   }
-
-  rowMode(): 'object' {
-    return 'object';
-  }
 }
 
-export class PositionSqlDeserializer<T> implements SqlDeserializer<T, unknown[]> {
+export class PositionSqlDeserializer<T> {
+  rowMode: 'array' = 'array';
   constructor(private _deserialize: (row: unknown[], idxOrName: number) => Result<T>, private currentIdxSize: number) {}
 
   map<B>(mapper: (t: T) => B): PositionSqlDeserializer<B> {
@@ -93,9 +79,6 @@ export class PositionSqlDeserializer<T> implements SqlDeserializer<T, unknown[]>
 
   deserialize(row: unknown[]): Result<T> {
     return this._deserialize(row, 0);
-  }
-  rowMode(): 'array' {
-    return 'array';
   }
 }
 
