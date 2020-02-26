@@ -109,6 +109,9 @@ const basicNamedSerializer = <A>({ guard, errorMessage }: DeserDefinition<A>) =>
 ): NamedSqlDeserializer<A> => {
   return new NamedSqlDeserializer<A>(
     (row: RowObject): Result<A> => {
+      if (!Object.prototype.hasOwnProperty.call(row, col)) {
+        throw new Error(`No column named '${col}' exists in the list of cols ${Object.keys(row).join(', ')}`);
+      }
       const value = row[col];
       if (guard(value)) {
         return Success.of(value);
