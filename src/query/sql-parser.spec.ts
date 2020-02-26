@@ -63,4 +63,15 @@ describe('sql', () => {
       expect(e.message).toStrictEqual('There must be at least 1 values in a row');
     }
   });
+
+  it('should combine errors message', async () => {
+    const query = sql`SELECT 'test', 12`;
+    try {
+      await query.list(deser.toDate.zip(deser.toString)).transact(pool);
+      fail('This call should fail');
+    } catch (e) {
+      expect(e).toBeInstanceOf(Error);
+      expect(e.message).toStrictEqual("'test' is not a Date, '12' is not an string");
+    }
+  });
 });
