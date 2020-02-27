@@ -1,7 +1,9 @@
 {
   "compilerOptions": {
+    "declaration": true,
     "target": "es2019",
     "module": "commonjs",
+    "rootDir": "./src",
     "outDir": "./dist/",
     "strict": true,
     "forceConsistentCasingInFileNames": true,
@@ -11,5 +13,6 @@
     "noFallthroughCasesInSwitch": true,
     "esModuleInterop": true,
     "lib": ["esnext"]
-  }
+  },
+  "exclude": ["node_modules", "dist", "coverage", "test"]
 }

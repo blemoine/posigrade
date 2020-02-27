@@ -2,7 +2,8 @@
   "name": "pg-fn",
   "version": "0.0.1",
   "description": "A library to simplify pg connection handling",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "ci:test": "npm run typecheck && npm run test -- --ci && npm run lint",
     "clean": "rm -rf dist .cache node_modules coverage",

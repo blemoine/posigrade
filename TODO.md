@@ -3,3 +3,4 @@
 * support de la template string avec un parametre de type ConnectionIO
 * tester les cas d'erreur
 * tester les `IN`
+* use index.ts to re-export things
