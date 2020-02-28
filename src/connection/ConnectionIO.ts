@@ -18,7 +18,10 @@ export class ConnectionIO<A> {
     try {
       await client.query('BEGIN');
 
-      return this.run(client);
+      const result = await this.run(client);
+
+      await client.query('COMMIT');
+      return result;
     } catch (e) {
       await client.query('ROLLBACK');
       throw e;

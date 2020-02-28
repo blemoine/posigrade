@@ -56,4 +56,27 @@ describe('sql-query', () => {
       creationDate: date,
     });
   });
+
+  test('should rollback if there is one error', async () => {
+    const createSportTable = sql`CREATE TABLE sports (id SERIAL, name TEXT NOT NULL)`.update();
+    await createSportTable.transact(pool);
+
+    const insert1 = sql`INSERT INTO sports (name) VALUES ('soccer')`.update();
+
+    const cio1 = insert1.flatMap(() => {
+      throw new Error('Expected error');
+    });
+
+    try {
+      await cio1.transact(pool);
+      fail('This call should fail');
+    } catch (e) {
+      expect(e).toBeInstanceOf(Error);
+      expect(e.message).toBe('Expected error');
+    }
+
+    const insertedRows = await sql`SELECT COUNT(*) FROM sports`.unique(deser.toString).transact(pool);
+
+    expect(insertedRows).toBe('0');
+  });
 });
