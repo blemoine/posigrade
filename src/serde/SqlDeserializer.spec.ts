@@ -53,5 +53,4 @@ describe('SqlDeserialize', () => {
 
     expect(result).toStrictEqual(Success.of(12.34));
   });
-
 });
