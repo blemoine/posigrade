@@ -96,10 +96,9 @@ export class PositionSqlDeserializer<T> {
   }
 }
 
-type DeserDefinition<A, B = A> = {
+type DeserDefinition<A> = {
   guard: (x: unknown) => x is A;
   errorMessage: (value: unknown) => string;
-  transform?: (a: A) => Result<B>;
 };
 
 const toInteger: DeserDefinition<number> = {
@@ -110,16 +109,7 @@ const toString: DeserDefinition<string> = {
   guard: (value): value is string => typeof value === 'string',
   errorMessage: (value) => `'${value}' is not an string`,
 };
-const toBigInt: DeserDefinition<string, BigInt> = {
-  ...toString,
-  transform: (s: string): Result<BigInt> => {
-    try {
-      return Success.of(BigInt(s));
-    } catch (e) {
-      return Failure.raise(`Cannot convert 's' to BigInt`);
-    }
-  },
-};
+
 const toNull: DeserDefinition<null> = {
   guard: (value): value is null => value === null,
   errorMessage: (value) => `'${value}' is not null`,
@@ -129,7 +119,7 @@ const toDate: DeserDefinition<Date> = {
   errorMessage: (value) => `'${value}' is not a Date`,
 };
 
-const basicNamedSerializer = <B, A>({ guard, errorMessage, transform }: DeserDefinition<B, A>) => (
+const basicNamedSerializer = <A>({ guard, errorMessage }: DeserDefinition<A>) => (
   col: string
 ): NamedSqlDeserializer<A> => {
   return new NamedSqlDeserializer<A>(
@@ -139,11 +129,7 @@ const basicNamedSerializer = <B, A>({ guard, errorMessage, transform }: DeserDef
       }
       const value = row[col];
       if (guard(value)) {
-        if (transform) {
-          return transform(value);
-        } else {
-          return Success.of(value) as any;
-        }
+        return Success.of(value);
       } else {
         return Failure.raise(`Column '${col}': ${errorMessage(value)}`);
       }
@@ -151,11 +137,7 @@ const basicNamedSerializer = <B, A>({ guard, errorMessage, transform }: DeserDef
   );
 };
 
-function basicPositionSerializer<A, B>({
-  guard,
-  errorMessage,
-  transform,
-}: DeserDefinition<B, A>): PositionSqlDeserializer<A> {
+function basicPositionSerializer<A>({ guard, errorMessage }: DeserDefinition<A>): PositionSqlDeserializer<A> {
   return new PositionSqlDeserializer<A>((row: unknown[], idx: number): Result<A> => {
     if (row.length <= idx) {
       return Failure.raise(`There must be at least ${idx} values in a row`);
@@ -163,19 +145,23 @@ function basicPositionSerializer<A, B>({
 
     const value = row[idx];
     if (guard(value)) {
-      if (transform) {
-        return transform(value);
-      } else {
-        return Success.of(value) as any;
-      }
+      return Success.of(value);
     } else {
       return Failure.raise(`Column '${idx}': ` + errorMessage(value));
     }
   }, 1);
 }
 
+const strToBigInt = (s: string): Result<BigInt> => {
+  try {
+    return Success.of(BigInt(s));
+  } catch (e) {
+    return Failure.raise(`Cannot convert ${s} to BigInt`);
+  }
+};
+
 export const deser = {
-  toBigInt: basicPositionSerializer(toBigInt),
+  toBigInt: basicPositionSerializer(toString).transform(strToBigInt),
   toInteger: basicPositionSerializer(toInteger),
   toString: basicPositionSerializer(toString),
   toDate: basicPositionSerializer(toDate),
@@ -183,7 +169,7 @@ export const deser = {
 } as const;
 
 export const namedDeser = {
-  toBigInt: basicNamedSerializer(toBigInt),
+  toBigInt: (col: string) => basicNamedSerializer(toString)(col).transform(strToBigInt),
   toInteger: basicNamedSerializer(toInteger),
   toString: basicNamedSerializer(toString),
   toDate: basicNamedSerializer(toDate),
