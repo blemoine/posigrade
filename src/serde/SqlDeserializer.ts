@@ -91,6 +91,10 @@ type DeserDefinition<A> = {
   errorMessage: (value: unknown) => string;
 };
 
+const toNumber: DeserDefinition<number> = {
+  guard: (value): value is number => typeof value === 'number',
+  errorMessage: (value) => `'${value}' is not a number`,
+};
 const toInteger: DeserDefinition<number> = {
   guard: (value): value is number => typeof value === 'number' && Number.isInteger(value),
   errorMessage: (value) => `'${value}' is not an integer`,
@@ -152,6 +156,7 @@ const strToBigInt = (s: string): Result<BigInt> => {
 
 export const deser = {
   toBigInt: basicPositionSerializer(toString).transform(strToBigInt),
+  toNumber: basicPositionSerializer(toNumber),
   toInteger: basicPositionSerializer(toInteger),
   toString: basicPositionSerializer(toString),
   toDate: basicPositionSerializer(toDate),
@@ -160,6 +165,7 @@ export const deser = {
 
 export const namedDeser = {
   toBigInt: (col: string) => basicNamedSerializer(toString)(col).transform(strToBigInt),
+  toNumber: basicNamedSerializer(toNumber),
   toInteger: basicNamedSerializer(toInteger),
   toString: basicNamedSerializer(toString),
   toDate: basicNamedSerializer(toDate),

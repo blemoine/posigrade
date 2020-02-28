@@ -47,4 +47,11 @@ describe('SqlDeserialize', () => {
 
     expect(result).toStrictEqual(Failure.raise("Cannot convert 'not a bigint' to BigInt"));
   });
+
+  it('should be able to deserialize number', () => {
+    const result = deser.toNumber.deserialize([12.34]);
+
+    expect(result).toStrictEqual(Success.of(12.34));
+  });
+
 });
