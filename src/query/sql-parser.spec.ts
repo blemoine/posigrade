@@ -49,7 +49,7 @@ describe('sql', () => {
       fail('This call should fail');
     } catch (e) {
       expect(e).toBeInstanceOf(Error);
-      expect(e.message).toStrictEqual("'12' is not an string");
+      expect(e.message).toStrictEqual("Column '0': '12' is not an string");
     }
   });
 
@@ -71,7 +71,7 @@ describe('sql', () => {
       fail('This call should fail');
     } catch (e) {
       expect(e).toBeInstanceOf(Error);
-      expect(e.message).toStrictEqual("'test' is not a Date, '12' is not an string");
+      expect(e.message).toStrictEqual("Column '0': 'test' is not a Date, Column '1': '12' is not an string");
     }
   });
 

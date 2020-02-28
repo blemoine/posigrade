@@ -75,8 +75,8 @@ describe('sql-query', () => {
       expect(e.message).toBe('Expected error');
     }
 
-    const insertedRows = await sql`SELECT COUNT(*) FROM sports`.unique(deser.toString).transact(pool);
+    const insertedRows = await sql`SELECT COUNT(*) FROM sports`.unique(deser.toBigInt).transact(pool);
 
-    expect(insertedRows).toBe('0');
+    expect(insertedRows).toBe(BigInt('0'));
   });
 });

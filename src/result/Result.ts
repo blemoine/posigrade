@@ -8,6 +8,10 @@ export class Success<T> {
     return Success.of(mapper(this.value));
   }
 
+  flatMap<B>(mapper: (t: T) => Result<B>): Result<B> {
+    return mapper(this.value);
+  }
+
   getOrThrow(): T {
     return this.value;
   }
@@ -27,6 +31,9 @@ export class Failure<T> {
 
   constructor(public readonly messages: ReadonlyArray<string>) {}
   map<B>(_mapper: (t: T) => B): Result<B> {
+    return this as any;
+  }
+  flatMap<B>(_mapper: (t: T) => Result<B>): Result<B> {
     return this as any;
   }
   getOrThrow(): T {
