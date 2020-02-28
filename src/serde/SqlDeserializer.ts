@@ -156,7 +156,7 @@ const strToBigInt = (s: string): Result<BigInt> => {
   try {
     return Success.of(BigInt(s));
   } catch (e) {
-    return Failure.raise(`Cannot convert ${s} to BigInt`);
+    return Failure.raise(`Cannot convert '${s}' to BigInt`);
   }
 };
 
