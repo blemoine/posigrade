@@ -26,16 +26,6 @@ export class NamedSqlDeserializer<T> {
     });
   }
 
-  or<B>(sqlDeserializer: NamedSqlDeserializer<B>): NamedSqlDeserializer<T | B> {
-    return new NamedSqlDeserializer<T | B>(
-      (row: RowObject): Result<T | B> => {
-        const v1 = this._deserialize(row);
-
-        return v1.recover(() => sqlDeserializer._deserialize(row));
-      }
-    );
-  }
-
   zip<B>(sqlDeserializer: NamedSqlDeserializer<B>): NamedSqlDeserializer<[T, B]> {
     return new NamedSqlDeserializer<[T, B]>(
       (row: RowObject): Result<[T, B]> => {
