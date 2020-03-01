@@ -5,11 +5,13 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
+    "build": "./node_modules/.bin/rimraf dist && tsc",
     "ci:test": "npm run typecheck && npm run test -- --ci && npm run lint",
     "clean": "rm -rf dist .cache node_modules coverage",
     "lint": "eslint './src/**/*.ts'",
     "test": "jest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "postgres",
@@ -29,6 +31,7 @@
     "eslint-plugin-prettier": "3.1.2",
     "jest": "25.1.0",
     "prettier": "1.19.1",
+    "rimraf": "^3.0.2",
     "testcontainers": "2.6.0",
     "ts-jest": "25.2.1",
     "typescript": "3.8.3"
@@ -38,6 +41,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/blemoine/posigrade"
+    "url": "https://github.com/blemoine/posigrade.git"
   }
 }
