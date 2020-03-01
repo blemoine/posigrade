@@ -1,5 +1,5 @@
 {
-  "name": "pg-fn",
+  "name": "posigrade",
   "version": "0.0.1",
   "description": "A library to simplify pg connection handling",
   "main": "dist/index.js",
@@ -35,5 +35,9 @@
   },
   "dependencies": {
     "pg": "^7.18.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/blemoine/posigrade"
   }
 }

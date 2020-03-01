@@ -13,6 +13,13 @@ export class ConnectionIO<A> {
     return new ConnectionIO<B>((client) => parentRun(client).then((a) => mapper(a).run(client)));
   }
 
+  zip<B>(connectionIo: ConnectionIO<B>): ConnectionIO<readonly [A, B]> {
+    const parentRun = this.run;
+    return new ConnectionIO<readonly [A, B]>((client) => {
+      return Promise.all([parentRun(client), connectionIo.run(client)]);
+    });
+  }
+
   async transact(pool: Pool): Promise<A> {
     const client = await pool.connect();
     try {

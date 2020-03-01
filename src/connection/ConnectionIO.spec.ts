@@ -21,4 +21,22 @@ describe('ConnectionIO', () => {
 
     expect(result).toBe(81);
   });
+
+  test('should support parallel execution with zip', (done) => {
+    let resolve!: () => void;
+    const promise = new Promise((r) => (resolve = r));
+    const c1 = new ConnectionIO(() => promise);
+    const callback = jest.fn(() => Promise.resolve(12));
+    const c2 = new ConnectionIO(callback);
+    const c3 = c1.zip(c2);
+
+    expect(callback).not.toHaveBeenCalled();
+
+    c3.transact(pool);
+    setTimeout(() => {
+      expect(callback).toHaveBeenCalledTimes(1);
+      resolve();
+      done();
+    }, 100);
+  });
 });
