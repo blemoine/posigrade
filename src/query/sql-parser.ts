@@ -1,6 +1,7 @@
 import { SqlQuery } from './sql-query';
 
-type SupportedValueType = string | number | boolean | Date | null;
+type BaseSupportedValueType = string | number | boolean | Date | null;
+type SupportedValueType = BaseSupportedValueType | Array<BaseSupportedValueType>;
 
 export function sql(strings: TemplateStringsArray, ...values: SupportedValueType[]): SqlQuery {
   const text = strings.reduce((currText, str, i) => {

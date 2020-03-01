@@ -1,6 +1,7 @@
 import { Pool } from 'pg';
 import { sql } from '../query/sql-parser';
 import { deser, namedDeser, sequenceDeser, sequenceDeserRecord } from '../serde/SqlDeserializer';
+import { ConnectionIO } from '..';
 
 describe('sql-query', () => {
   let pool: Pool;
@@ -78,5 +79,34 @@ describe('sql-query', () => {
     const insertedRows = await sql`SELECT COUNT(*) FROM sports`.unique(deser.toBigInt).transact(pool);
 
     expect(insertedRows).toBe(BigInt('0'));
+  });
+
+  test('IN queries should work seamlessly', async () => {
+    const spotlessBooks = ['Spotless', 'Beating Ruby', 'Crystal Whisperer', 'Butterfly in Amber'];
+    const stillBooks = ['Still'];
+    const silverlegsBooks = ['Silverlegs'];
+
+    const createBookTable = sql`CREATE TABLE books(id SERIAL, title TEXT NOT NULL, serie TEXT DEFAULT NULL)`.update();
+    const insertFn = (title: string, serie: string | null): ConnectionIO<void> =>
+      sql`INSERT INTO books(title, serie) VALUES(${title}, ${serie})`.update();
+    const cio = createBookTable.flatMap(() => {
+      return [
+        ...spotlessBooks.map((title) => insertFn(title, 'Spotless')),
+        ...stillBooks.map((title) => insertFn(title, null)),
+        ...silverlegsBooks.map((title) => insertFn(title, null)),
+      ].reduce((a, b) => a.zip(b).map(() => {}));
+    });
+
+    const stillAndSilverlegs = [...stillBooks, ...silverlegsBooks];
+    const result = await cio
+      .flatMap(() =>
+        sql`SELECT title FROM books WHERE title <> ALL(${stillAndSilverlegs})`
+          .list(deser.toString)
+          .zip(sql`SELECT title FROM books WHERE title =  ANY(${stillAndSilverlegs})`.list(deser.toString))
+          .zip(sql`SELECT title FROM books WHERE title =  ANY(${[]})`.list(deser.toString))
+      )
+      .transact(pool);
+
+    expect(result).toStrictEqual([[spotlessBooks, stillAndSilverlegs], []]);
   });
 });
