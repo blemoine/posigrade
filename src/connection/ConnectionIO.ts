@@ -1,4 +1,5 @@
 import { ClientBase, Pool } from 'pg';
+import { Unshift } from '../utils/Tuple.type';
 
 export class ConnectionIO<A> {
   constructor(private run: (client: ClientBase) => Promise<A>) {}
@@ -13,11 +14,13 @@ export class ConnectionIO<A> {
     return new ConnectionIO<B>((client) => parentRun(client).then((a) => mapper(a).run(client)));
   }
 
-  zip<B>(connectionIo: ConnectionIO<B>): ConnectionIO<readonly [A, B]> {
+  zip<T extends Array<ConnectionIO<any>>>(
+    ...connectionIos: T
+  ): ConnectionIO<Unshift<{ [K in keyof T]: T[K] extends ConnectionIO<infer U> ? U : never }, A>> {
     const parentRun = this.run;
-    return new ConnectionIO<readonly [A, B]>((client) => {
-      return Promise.all([parentRun(client), connectionIo.run(client)]);
-    });
+    return new ConnectionIO((client) => {
+      return Promise.all([parentRun(client), ...connectionIos.map((c) => c.run(client))]);
+    }) as any;
   }
 
   async transact(pool: Pool): Promise<A> {

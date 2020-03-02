@@ -90,11 +90,12 @@ describe('sql-query', () => {
     const insertFn = (title: string, serie: string | null): ConnectionIO<void> =>
       sql`INSERT INTO books(title, serie) VALUES(${title}, ${serie})`.update();
     const cio = createBookTable.flatMap(() => {
-      return [
+      const [first, ...tail] = [
         ...spotlessBooks.map((title) => insertFn(title, 'Spotless')),
         ...stillBooks.map((title) => insertFn(title, null)),
         ...silverlegsBooks.map((title) => insertFn(title, null)),
-      ].reduce((a, b) => a.zip(b).map(() => {}));
+      ];
+      return first.zip(...tail);
     });
 
     const stillAndSilverlegs = [...stillBooks, ...silverlegsBooks];
@@ -102,11 +103,13 @@ describe('sql-query', () => {
       .flatMap(() =>
         sql`SELECT title FROM books WHERE title <> ALL(${stillAndSilverlegs})`
           .list(deser.toString)
-          .zip(sql`SELECT title FROM books WHERE title =  ANY(${stillAndSilverlegs})`.list(deser.toString))
-          .zip(sql`SELECT title FROM books WHERE title =  ANY(${[]})`.list(deser.toString))
+          .zip(
+            sql`SELECT title FROM books WHERE title =  ANY(${stillAndSilverlegs})`.list(deser.toString),
+            sql`SELECT title FROM books WHERE title =  ANY(${[]})`.list(deser.toString)
+          )
       )
       .transact(pool);
 
-    expect(result).toStrictEqual([[spotlessBooks, stillAndSilverlegs], []]);
+    expect(result).toStrictEqual([spotlessBooks, stillAndSilverlegs, []]);
   });
 });

@@ -28,7 +28,7 @@ describe('ConnectionIO', () => {
     const c1 = new ConnectionIO(() => promise);
     const callback = jest.fn(() => Promise.resolve(12));
     const c2 = new ConnectionIO(callback);
-    const c3 = c1.zip(c2);
+    const c3: ConnectionIO<[unknown, number]> = c1.zip(c2);
 
     expect(callback).not.toHaveBeenCalled();
 
@@ -38,5 +38,17 @@ describe('ConnectionIO', () => {
       resolve();
       done();
     }, 100);
+  });
+
+  test('zip should be able to take multiple connectionIO as parameter', async () => {
+    const c1 = new ConnectionIO(() => Promise.resolve(1));
+    const c2 = new ConnectionIO(() => Promise.resolve(2));
+    const c3 = new ConnectionIO(() => Promise.resolve(3));
+
+    const result: ConnectionIO<[number, number, number]> = c1.zip(c2, c3);
+
+    const values = await result.transact(pool);
+
+    expect(values).toStrictEqual([1, 2, 3]);
   });
 });
