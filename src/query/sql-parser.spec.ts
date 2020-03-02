@@ -1,6 +1,7 @@
-import { sql } from './sql-parser';
+import { sql, sqlFrag } from './sql-parser';
 import { deser, namedDeser } from '../serde/SqlDeserializer';
 import { Pool } from 'pg';
+import { SqlQuery } from './sql-query';
 
 describe('sql', () => {
   let pool: Pool;
@@ -94,5 +95,45 @@ describe('sql', () => {
       expect(e).toBeInstanceOf(Error);
       expect(e.message).toStrictEqual("No column named 'name' exists in the list of cols 'id'");
     }
+  });
+});
+
+describe('sqlFrag', () => {
+  it('should create a sqlFragment, transformable to a query', () => {
+    const value = 12;
+    const fr = sqlFrag`SELECT ${value} as id`;
+
+    const query = fr.toQuery();
+
+    expect(query).toStrictEqual(
+      new SqlQuery({
+        text: 'SELECT $1 as id',
+        values: [12],
+      })
+    );
+  });
+
+  it('should support sqlFragment concatenation', () => {
+    const value = 12;
+    const table = 'cars';
+    const id = 23;
+    const name = 'tesla';
+    const fr1 = sqlFrag`SELECT ${value}`;
+    const fr2 = sqlFrag` FROM ${table} WHERE id =`;
+    const fr3 = sqlFrag`${id} AND name=`;
+    const fr4 = sqlFrag`${name}`;
+
+    const query = fr1
+      .concat(fr2)
+      .concat(fr3)
+      .concat(fr4)
+      .toQuery();
+
+    expect(query).toStrictEqual(
+      new SqlQuery({
+        text: 'SELECT $1 FROM $2 WHERE id =$3 AND name=$4',
+        values: [12, 'cars', 23, name],
+      })
+    );
   });
 });
