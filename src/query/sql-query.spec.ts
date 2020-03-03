@@ -27,6 +27,13 @@ describe('sql-query', () => {
       expect(result).toStrictEqual(12);
     });
 
+    test('should return null if there is no line', async () => {
+      const query = new SqlQuery({ text: 'SELECT id FROM (SELECT 12 as id) a WHERE a.id != 12' });
+      const result = await query.unique(deser.toInteger).transact(pool);
+
+      expect(result).toStrictEqual(null);
+    });
+
     test('should fail if there more than one row', async () => {
       const query = new SqlQuery({ text: 'SELECT 12 UNION SELECT 987' });
       try {

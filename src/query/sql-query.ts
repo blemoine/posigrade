@@ -21,10 +21,13 @@ export class SqlQuery {
     });
   }
 
-  unique<A>(deserializer: SqlDeserializer<A>): ConnectionIO<A> {
+  unique<A>(deserializer: SqlDeserializer<A>): ConnectionIO<A | null> {
     return mkConnectionIO(this.queryConfig, deserializer.rowMode).map(({ rows }) => {
-      if (rows.length !== 1) {
+      if (rows.length > 1) {
         throw new Error(`Query ${this.queryConfig.text} returns more than one row`);
+      }
+      if (rows.length === 0) {
+        return null;
       }
       return deserializer.deserialize(rows[0]).getOrThrow();
     });
