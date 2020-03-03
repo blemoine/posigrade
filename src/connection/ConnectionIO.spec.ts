@@ -11,15 +11,24 @@ describe('ConnectionIO', () => {
   afterAll(() => {
     pool.end();
   });
-  test('should form a monad', async () => {
-    const c1 = new ConnectionIO((client) => client.query('SELECT 45 as n')).map(({ rows }) => rows[0].n);
-    const c2 = c1.flatMap((x) =>
-      new ConnectionIO((client) => client.query('SELECT 36 as n')).map(({ rows }) => rows[0].n + x)
-    );
+  describe('should form a monad', () => {
+    test('should have a pure operation', async () => {
+      const c1 = ConnectionIO.pure(12);
 
-    const result = await c2.transact(pool);
+      const result = await c1.transact(pool);
 
-    expect(result).toBe(81);
+      expect(result).toBe(12);
+    });
+    test('should have a flatMap operation', async () => {
+      const c1 = new ConnectionIO((client) => client.query('SELECT 45 as n')).map(({ rows }) => rows[0].n);
+      const c2 = c1.flatMap((x) =>
+        new ConnectionIO((client) => client.query('SELECT 36 as n')).map(({ rows }) => rows[0].n + x)
+      );
+
+      const result = await c2.transact(pool);
+
+      expect(result).toBe(81);
+    });
   });
 
   test('should support parallel execution with zip', (done) => {

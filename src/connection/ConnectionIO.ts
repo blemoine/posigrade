@@ -2,6 +2,9 @@ import { ClientBase, Pool } from 'pg';
 import { Unshift } from '../utils/Tuple.type';
 
 export class ConnectionIO<A> {
+  static pure<A>(a: A): ConnectionIO<A> {
+    return new ConnectionIO<A>(() => Promise.resolve(a));
+  }
   constructor(private run: (client: ClientBase) => Promise<A>) {}
 
   map<B>(mapper: (a: A) => B): ConnectionIO<B> {
