@@ -8,7 +8,9 @@ function mkConnectionIO(
   rowMode: 'array' | 'object'
 ): ConnectionIO<QueryArrayResult | QueryResult> {
   return new ConnectionIO((client) => {
-    return client.query({ ...queryConfig, ...(rowMode === 'array' ? { rowMode } : {}) });
+    return client.query({ ...queryConfig, ...(rowMode === 'array' ? { rowMode } : {}) }).catch((err) => {
+      throw new Error(`Error on query '${queryConfig.text}': '${err.message}'`);
+    });
   });
 }
 

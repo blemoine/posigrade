@@ -112,4 +112,17 @@ describe('sql-query', () => {
 
     expect(result).toStrictEqual([spotlessBooks, stillAndSilverlegs, []]);
   });
+
+  test('Invalid SQL query should be displayed in error', async () => {
+    const c1 = sql`SELECT 12`.unique(deser.toInteger);
+    const c2 = sql`SEL ECT 13`.unique(deser.toInteger);
+
+    try {
+      await c1.flatMap(() => c2).transact(pool);
+      fail('This query should fail');
+    } catch (err) {
+      expect(err).toBeInstanceOf(Error);
+      expect(err.message).toBe("Error on query 'SEL ECT 13': 'syntax error at or near \"SEL\"'");
+    }
+  });
 });
