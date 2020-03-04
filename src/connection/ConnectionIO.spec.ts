@@ -13,7 +13,7 @@ describe('ConnectionIO', () => {
   });
   describe('should form a monad', () => {
     test('should have a pure operation', async () => {
-      const c1 = ConnectionIO.pure(12);
+      const c1 = ConnectionIO.of(12);
 
       const result = await c1.transact(pool);
 

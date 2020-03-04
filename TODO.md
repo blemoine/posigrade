@@ -1,2 +1,3 @@
 - support de la template string avec un parametre de type ConnectionIO
 - tester les cas d'erreur
+- improve error reporting: if there is a syntax error, display the original query
