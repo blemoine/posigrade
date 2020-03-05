@@ -101,7 +101,7 @@ const toInteger: DeserDefinition<number> = {
 };
 const toString: DeserDefinition<string> = {
   guard: (value): value is string => typeof value === 'string',
-  errorMessage: (value) => `'${value}' is not an string`,
+  errorMessage: (value) => `'${value}' is not a string`,
 };
 
 const toNull: DeserDefinition<null> = {

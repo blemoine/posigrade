@@ -50,7 +50,7 @@ describe('sql', () => {
       fail('This call should fail');
     } catch (e) {
       expect(e).toBeInstanceOf(Error);
-      expect(e.message).toStrictEqual("Column '0': '12' is not an string");
+      expect(e.message).toStrictEqual("Column '0': '12' is not a string");
     }
   });
 
@@ -72,7 +72,7 @@ describe('sql', () => {
       fail('This call should fail');
     } catch (e) {
       expect(e).toBeInstanceOf(Error);
-      expect(e.message).toStrictEqual("Column '0': 'test' is not a Date, Column '1': '12' is not an string");
+      expect(e.message).toStrictEqual("Column '0': 'test' is not a Date, Column '1': '12' is not a string");
     }
   });
 
@@ -83,7 +83,7 @@ describe('sql', () => {
       fail('This call should fail');
     } catch (e) {
       expect(e).toBeInstanceOf(Error);
-      expect(e.message).toStrictEqual("Column 'id': '12' is not an string");
+      expect(e.message).toStrictEqual("Column 'id': '12' is not a string");
     }
   });
   it('should display explicit error message if trying to get by name a column that does not exist', async () => {
