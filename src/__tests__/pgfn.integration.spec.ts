@@ -125,4 +125,36 @@ describe('sql-query', () => {
       expect(err.message).toBe("Error on query 'SEL ECT 13': 'syntax error at or near \"SEL\"'");
     }
   });
+
+  test('should support nested deserializer', async () => {
+    const createOrgTable = sql`CREATE TABLE organizations(id SERIAL, name TEXT, street TEXT, city TEXT, country TEXT)`.update();
+    const insertAnOrg = sql`INSERT INTO organizations(name, street, city, country) VALUES ('Acme', '1 random street', 'Montreal', 'CANADA')`.update();
+
+    const addressDeserializer = sequenceDeserRecord({
+      street: namedDeser.toString('street'),
+      city: namedDeser.toString('city'),
+      country: namedDeser.toString('country'),
+    });
+    const orgDeserializer = sequenceDeserRecord({
+      id: namedDeser.toInteger('id'),
+      name: namedDeser.toString('name'),
+      address: addressDeserializer,
+    });
+    const selectOrg = sql`SELECT * FROM organizations`.unique(orgDeserializer);
+
+    const result = await createOrgTable
+      .flatMap(() => insertAnOrg)
+      .flatMap(() => selectOrg)
+      .transact(pool);
+
+    expect(result).toStrictEqual({
+      id: 1,
+      name: 'Acme',
+      address: {
+        street: '1 random street',
+        city: 'Montreal',
+        country: 'CANADA',
+      },
+    });
+  });
 });

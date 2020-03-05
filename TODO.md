@@ -1,5 +1,5 @@
 - support de la template string avec un parametre de type ConnectionIO
 - tester les cas d'erreur
 - improve error reporting: if there is a syntax error, display the original query
-- verifier la combinaison de plusieurs deserializer
 - code pour tester les query
+- try to namedDeserializer without specific col name ?
