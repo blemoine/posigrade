@@ -172,14 +172,12 @@ export const namedDeser = {
   toNull: basicNamedSerializer(toNull),
 } as const;
 
-export function sequenceDeser<D, A extends Array<D>>(
-  ...arr: A
-): PositionSqlDeserializer<{ [K in keyof A]: A[K] extends PositionSqlDeserializer<infer U> ? U : never }> {
+export function sequenceDeser<A extends Array<any>>(
+  ...arr: { [K in keyof A]: PositionSqlDeserializer<A[K]> }
+): PositionSqlDeserializer<A> {
   return arr.reduce<PositionSqlDeserializer<Array<unknown>>>((acc, deser) => {
     return acc.zipWith(deser as any, (a, b) => [...a, b]);
-  }, new PositionSqlDeserializer(() => Success.of([]), 0)) as PositionSqlDeserializer<
-    { [K in keyof A]: A[K] extends PositionSqlDeserializer<infer U> ? U : never }
-  >;
+  }, new PositionSqlDeserializer(() => Success.of([]), 0)) as PositionSqlDeserializer<A>;
 }
 
 export function sequenceDeserRecord<A extends { [key: string]: any }>(
