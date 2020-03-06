@@ -21,9 +21,7 @@ export class ConnectionIO<A> {
     return new ConnectionIO<B>((client) => parentRun(client).then((a) => mapper(a).run(client)));
   }
 
-  zip<T extends Array<ConnectionIO<any>>>(
-    ...connectionIos: T
-  ): ConnectionIO<Unshift<{ [K in keyof T]: T[K] extends ConnectionIO<infer U> ? U : never }, A>> {
+  zip<T extends Array<any>>(...connectionIos: { [K in keyof T]: ConnectionIO<T[K]> }): ConnectionIO<Unshift<T, A>> {
     const parentRun = this.run;
     return new ConnectionIO((client) => {
       return Promise.all([parentRun(client), ...connectionIos.map((c) => c.run(client))]);
