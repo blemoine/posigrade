@@ -6,6 +6,16 @@ type RowObject = { [p: string]: unknown };
 
 export class NamedSqlDeserializer<T> {
   rowMode: 'object' = 'object';
+  static sequenceDeserRecord<A extends { [key: string]: any }>(
+    obj: {
+      [K in keyof A]: NamedSqlDeserializer<A[K]> | ((col: string) => NamedSqlDeserializer<A[K]>);
+    }
+  ): NamedSqlDeserializer<A> {
+    return Object.entries(obj).reduce<NamedSqlDeserializer<Partial<A>>>((acc, [key, baseDeser]) => {
+      const deser: NamedSqlDeserializer<unknown> = typeof baseDeser === 'function' ? baseDeser(key) : baseDeser;
+      return acc.zipWith(deser, (a, b) => ({ ...a, [key]: b }));
+    }, new NamedSqlDeserializer(() => Success.of({}))) as NamedSqlDeserializer<A>;
+  }
   constructor(private _deserialize: (row: RowObject) => Result<T>) {}
 
   deserialize(row: RowObject): Result<T> {
@@ -44,6 +54,15 @@ export class NamedSqlDeserializer<T> {
 
 export class PositionSqlDeserializer<T> {
   rowMode: 'array' = 'array';
+
+  static sequenceDeser<A extends Array<any>>(
+    ...arr: { [K in keyof A]: PositionSqlDeserializer<A[K]> }
+  ): PositionSqlDeserializer<A> {
+    return arr.reduce<PositionSqlDeserializer<Array<unknown>>>((acc, deser) => {
+      return acc.zipWith(deser as any, (a, b) => [...a, b]);
+    }, new PositionSqlDeserializer(() => Success.of([]), 0)) as PositionSqlDeserializer<A>;
+  }
+
   constructor(private _deserialize: (row: unknown[], idxOrName: number) => Result<T>, private currentIdxSize: number) {}
 
   map<B>(mapper: (t: T) => B): PositionSqlDeserializer<B> {
@@ -171,22 +190,3 @@ export const namedDeser = {
   toDate: basicNamedSerializer(toDate),
   toNull: basicNamedSerializer(toNull),
 } as const;
-
-export function sequenceDeser<A extends Array<any>>(
-  ...arr: { [K in keyof A]: PositionSqlDeserializer<A[K]> }
-): PositionSqlDeserializer<A> {
-  return arr.reduce<PositionSqlDeserializer<Array<unknown>>>((acc, deser) => {
-    return acc.zipWith(deser as any, (a, b) => [...a, b]);
-  }, new PositionSqlDeserializer(() => Success.of([]), 0)) as PositionSqlDeserializer<A>;
-}
-
-export function sequenceDeserRecord<A extends { [key: string]: any }>(
-  obj: {
-    [K in keyof A]: NamedSqlDeserializer<A[K]> | ((col: string) => NamedSqlDeserializer<A[K]>);
-  }
-): NamedSqlDeserializer<A> {
-  return Object.entries(obj).reduce<NamedSqlDeserializer<Partial<A>>>((acc, [key, baseDeser]) => {
-    const deser: NamedSqlDeserializer<unknown> = typeof baseDeser === 'function' ? baseDeser(key) : baseDeser;
-    return acc.zipWith(deser, (a, b) => ({ ...a, [key]: b }));
-  }, new NamedSqlDeserializer(() => Success.of({}))) as NamedSqlDeserializer<A>;
-}

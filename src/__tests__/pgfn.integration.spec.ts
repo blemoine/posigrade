@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
 import { sql } from '../query/sql-parser';
-import { deser, namedDeser, sequenceDeser, sequenceDeserRecord } from '../serde/SqlDeserializer';
+import { deser, namedDeser, NamedSqlDeserializer, PositionSqlDeserializer } from '../serde/SqlDeserializer';
 import { ConnectionIO } from '..';
 
 describe('sql-query', () => {
@@ -20,7 +20,7 @@ describe('sql-query', () => {
     const date = new Date('2020-02-03T05:06:07Z');
     const date2 = new Date('2021-05-15T15:16:17Z');
     const insertCar = sql`INSERT INTO car(name, date) VALUES (${carName}, ${date}), (null, ${date2}) RETURNING *`.list(
-      sequenceDeser(deser.toInteger, deser.toString.or(deser.toNull), deser.toDate)
+      PositionSqlDeserializer.sequenceDeser(deser.toInteger, deser.toString.or(deser.toNull), deser.toDate)
     );
 
     const cio = createCarTable.flatMap(() => insertCar);
@@ -37,7 +37,7 @@ describe('sql-query', () => {
     const animalSpecies = 'rat';
     const date = new Date('2020-02-03T05:06:07Z');
 
-    const animalDeserializer = sequenceDeserRecord({
+    const animalDeserializer = NamedSqlDeserializer.sequenceDeserRecord({
       id: namedDeser.toInteger('id'),
       species: namedDeser.toString('species'),
       creationDate: namedDeser.toDate('date'),
@@ -130,12 +130,12 @@ describe('sql-query', () => {
     const createOrgTable = sql`CREATE TABLE organizations(id SERIAL, name TEXT, street TEXT, city TEXT, country TEXT)`.update();
     const insertAnOrg = sql`INSERT INTO organizations(name, street, city, country) VALUES ('Acme', '1 random street', 'Montreal', 'CANADA')`.update();
 
-    const addressDeserializer = sequenceDeserRecord({
+    const addressDeserializer = NamedSqlDeserializer.sequenceDeserRecord({
       street: namedDeser.toString('street'),
       city: namedDeser.toString('city'),
       country: namedDeser.toString('country'),
     });
-    const orgDeserializer = sequenceDeserRecord({
+    const orgDeserializer = NamedSqlDeserializer.sequenceDeserRecord({
       id: namedDeser.toInteger('id'),
       name: namedDeser.toString('name'),
       address: addressDeserializer,

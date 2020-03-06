@@ -7,8 +7,6 @@ import {
   NamedSqlDeserializer,
   PositionSqlDeserializer,
   SqlDeserializer,
-  sequenceDeserRecord,
-  sequenceDeser,
 } from './serde/SqlDeserializer';
 import { SqlQuery } from './query/sql-query';
 
@@ -22,8 +20,6 @@ export {
   deser,
   namedDeser,
   SqlDeserializer,
-  sequenceDeserRecord,
-  sequenceDeser,
   NamedSqlDeserializer,
   PositionSqlDeserializer,
   SqlQuery,

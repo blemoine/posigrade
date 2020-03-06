@@ -1,4 +1,4 @@
-import { deser, namedDeser, sequenceDeser, sequenceDeserRecord } from './SqlDeserializer';
+import { deser, namedDeser, NamedSqlDeserializer, PositionSqlDeserializer } from './SqlDeserializer';
 import { Failure, Success } from '../result/Result';
 
 describe('SqlDeserialize', () => {
@@ -11,7 +11,12 @@ describe('SqlDeserialize', () => {
   });
 
   it('should be able to combine multiple deserializers', () => {
-    const tuple = sequenceDeser(deser.toString, deser.toInteger, deser.toInteger, deser.toString);
+    const tuple = PositionSqlDeserializer.sequenceDeser(
+      deser.toString,
+      deser.toInteger,
+      deser.toInteger,
+      deser.toString
+    );
 
     const result = tuple.deserialize(['Georges', 12, 45, 'Abitbol']);
 
@@ -57,7 +62,7 @@ describe('SqlDeserialize', () => {
 
 describe('sequenceDeserRecord', () => {
   it('should support the deserialization without an explicit column name', () => {
-    const userDeser = sequenceDeserRecord({
+    const userDeser = NamedSqlDeserializer.sequenceDeserRecord({
       id: namedDeser.toInteger('id'),
       firstName: namedDeser.toString('first_name'),
       age: namedDeser.toInteger,
