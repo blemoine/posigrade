@@ -50,6 +50,16 @@ export class NamedSqlDeserializer<T> {
   zipWith<B, C>(sqlDeserializer: NamedSqlDeserializer<B>, cb: (t: T, b: B) => C): NamedSqlDeserializer<C> {
     return this.zip(sqlDeserializer).map(([t, b]) => cb(t, b));
   }
+
+  or<B>(sqlDeserializer: NamedSqlDeserializer<B>): NamedSqlDeserializer<T | B> {
+    return new NamedSqlDeserializer<T | B>(
+      (row: RowObject): Result<T | B> => {
+        const v1 = this._deserialize(row);
+
+        return v1.recover(() => sqlDeserializer._deserialize(row));
+      }
+    );
+  }
 }
 
 export class PositionSqlDeserializer<T> {

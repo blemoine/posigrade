@@ -34,6 +34,17 @@ describe('SqlDeserialize', () => {
 
     expect(result2).toStrictEqual(Success.of(null));
   });
+  it('should be able to combine name deserializers with a or', () => {
+    const strOrNull = namedDeser.toString('id').or(namedDeser.toNull('id'));
+
+    const result = strOrNull.deserialize({ id: 'Georges' });
+
+    expect(result).toStrictEqual(Success.of('Georges'));
+
+    const result2 = strOrNull.deserialize({ id: null });
+
+    expect(result2).toStrictEqual(Success.of(null));
+  });
 
   it('should be able to deserialize bigInt', () => {
     const result = deser.toBigInt.deserialize(['1234']);
