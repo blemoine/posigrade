@@ -1,2 +1,3 @@
 - support de la template string avec un parametre de type ConnectionIO
 - code pour tester les query
+- creer un raccourci pour le"orNull"

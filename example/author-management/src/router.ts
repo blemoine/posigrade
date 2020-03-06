@@ -1,11 +1,12 @@
 import express from 'express';
+import { createAuthorController } from './author.controller';
 
 export const router = express.Router();
 
 const noop = () => {};
 
 router.get('/authors', noop);
-router.post('/authors', noop);
+router.post('/authors', createAuthorController);
 
 router.get('/authors/:id', noop);
 router.put('/authors/:id', noop);
