@@ -183,11 +183,12 @@ export function sequenceDeser<D, A extends Array<D>>(
 }
 
 export function sequenceDeserRecord<A extends { [key: string]: any }>(
-  obj: A
-): NamedSqlDeserializer<{ [K in keyof A]: A[K] extends NamedSqlDeserializer<infer U> ? U : never }> {
-  return Object.entries(obj).reduce<NamedSqlDeserializer<{ [key: string]: unknown }>>((acc, [key, deser]) => {
+  obj: {
+    [K in keyof A]: NamedSqlDeserializer<A[K]> | ((col: string) => NamedSqlDeserializer<A[K]>);
+  }
+): NamedSqlDeserializer<A> {
+  return Object.entries(obj).reduce<NamedSqlDeserializer<Partial<A>>>((acc, [key, baseDeser]) => {
+    const deser: NamedSqlDeserializer<unknown> = typeof baseDeser === 'function' ? baseDeser(key) : baseDeser;
     return acc.zipWith(deser, (a, b) => ({ ...a, [key]: b }));
-  }, new NamedSqlDeserializer(() => Success.of({}))) as NamedSqlDeserializer<
-    { [K in keyof A]: A[K] extends NamedSqlDeserializer<infer U> ? U : never }
-  >;
+  }, new NamedSqlDeserializer(() => Success.of({}))) as NamedSqlDeserializer<A>;
 }

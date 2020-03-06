@@ -1,4 +1,4 @@
-import { deser, namedDeser, sequenceDeser } from './SqlDeserializer';
+import { deser, namedDeser, sequenceDeser, sequenceDeserRecord } from './SqlDeserializer';
 import { Failure, Success } from '../result/Result';
 
 describe('SqlDeserialize', () => {
@@ -52,5 +52,20 @@ describe('SqlDeserialize', () => {
     const result = deser.toNumber.deserialize([12.34]);
 
     expect(result).toStrictEqual(Success.of(12.34));
+  });
+});
+
+describe('sequenceDeserRecord', () => {
+  it('should support the deserialization without an explicit column name', () => {
+    const userDeser = sequenceDeserRecord({
+      id: namedDeser.toInteger('id'),
+      firstName: namedDeser.toString('first_name'),
+      age: namedDeser.toInteger,
+    });
+
+    // eslint-disable-next-line @typescript-eslint/camelcase
+    const result = userDeser.deserialize({ id: 1, first_name: 'Georges', age: 45 });
+
+    expect(result).toStrictEqual(Success.of({ id: 1, firstName: 'Georges', age: 45 }));
   });
 });
