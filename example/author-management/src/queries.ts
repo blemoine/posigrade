@@ -10,3 +10,7 @@ const authorDeserializer: NamedSqlDeserializer<Author> = NamedSqlDeserializer.se
 export function createAuthorQuery({ name, twitter }: AuthorCreationModel): ConnectionIO<Author | null> {
   return sql`INSERT INTO authors (name, twitter) VALUES (${name}, ${twitter}) RETURNING *`.unique(authorDeserializer);
 }
+
+export function getAllAuthorsQuery(): ConnectionIO<Array<Author>> {
+  return sql`SELECT * FROM authors`.list(authorDeserializer);
+}
