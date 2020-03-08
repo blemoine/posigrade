@@ -65,10 +65,10 @@ export class NamedSqlDeserializer<T> {
 export class PositionSqlDeserializer<T> {
   rowMode: 'array' = 'array';
 
-  static sequenceDeser<A extends Array<any>>(
+  static sequenceDeser<A extends ReadonlyArray<any>>(
     ...arr: { [K in keyof A]: PositionSqlDeserializer<A[K]> }
   ): PositionSqlDeserializer<A> {
-    return arr.reduce<PositionSqlDeserializer<Array<unknown>>>((acc, deser) => {
+    return arr.reduce<PositionSqlDeserializer<ReadonlyArray<unknown>>>((acc, deser) => {
       return acc.zipWith(deser as any, (a, b) => [...a, b]);
     }, new PositionSqlDeserializer(() => Success.of([]), 0)) as PositionSqlDeserializer<A>;
   }
@@ -143,6 +143,10 @@ const toNull: DeserDefinition<null> = {
 const toDate: DeserDefinition<Date> = {
   guard: (value): value is Date => value instanceof Date,
   errorMessage: (value) => `'${value}' is not a Date`,
+};
+const toJsonObject: DeserDefinition<object> = {
+  guard: (value): value is object => value != null && typeof value == 'object',
+  errorMessage: (value) => `'${value}' is not an object`,
 };
 
 class BasicNamedSqlDeserializer<A> extends NamedSqlDeserializer<A> {
@@ -229,6 +233,7 @@ export const deser = {
   toString: basicPositionDeserializer(toString),
   toDate: basicPositionDeserializer(toDate),
   toNull: basicPositionDeserializer(toNull),
+  toJsonObject: basicPositionDeserializer(toJsonObject),
 } as const;
 
 export const namedDeser = {
@@ -238,4 +243,5 @@ export const namedDeser = {
   toString: basicNamedDeserializer(toString),
   toDate: basicNamedDeserializer(toDate),
   toNull: basicNamedDeserializer(toNull),
+  toJsonObject: basicNamedDeserializer(toJsonObject),
 } as const;
