@@ -13,7 +13,7 @@ type Album = {
   releaseDate: Date;
 };
 type BandWithAlbums = {
-  author: Band;
+  band: Band;
   albums: ReadonlyArray<Album>;
 };
 
@@ -36,6 +36,20 @@ function insertAlbum(name: string, releaseDate: Date): ConnectionIO<number> {
   );
 }
 
+const bandAndAlbumDeser: PositionSqlDeserializer<{
+  band: Band;
+  album: Album;
+}> = PositionSqlDeserializer.sequenceDeser(
+  deser.toInteger,
+  deser.toString,
+  deser.toJsonObject.orNull(),
+  deser.toInteger,
+  deser.toString,
+  deser.toDate
+).map(([bandId, bandName, preferences, albumId, albumName, releaseDate]) => ({
+  band: { id: bandId, name: bandName, preferences },
+  album: { id: albumId, name: albumName, releaseDate },
+}));
 function findBandWithAlbumsById(id: number): ConnectionIO<BandWithAlbums | null> {
   return sql`
         SELECT b.id, b.name, b.preferences, a.id, a.name, a.release_date 
@@ -43,33 +57,18 @@ function findBandWithAlbumsById(id: number): ConnectionIO<BandWithAlbums | null>
           LEFT JOIN bands_albums ba ON ba.band_id = b.id 
           LEFT JOIN albums a ON a.id = ba.album_id 
         WHERE b.id = ${id}`
-    .list(
-      PositionSqlDeserializer.sequenceDeser(
-        deser.toInteger,
-        deser.toString,
-        deser.toJsonObject.orNull(),
-        deser.toInteger,
-        deser.toString,
-        deser.toDate
-      )
-    )
-    .map((arr: Array<[number, string, object | null, number, string, Date]>) => {
-      const grouped = arr.reduce<{ [bandId: string]: BandWithAlbums }>(
-        (acc, [bandId, bandName, preferences, albumId, albumName, releaseDate]) => {
-          const album = { id: albumId, name: albumName, releaseDate };
-          if (!acc[bandId]) {
-            acc[bandId] = {
-              author: { id: bandId, name: bandName, preferences },
-              albums: [album],
-            };
-          } else {
-            acc[bandId].albums = [...acc[bandId].albums, album];
-          }
+    .list(bandAndAlbumDeser)
+    .map((arr) => {
+      const grouped = arr.reduce<{ [bandId: string]: BandWithAlbums }>((acc, { band, album }) => {
+        const bandId = band.id;
+        if (!acc[bandId]) {
+          acc[bandId] = { band, albums: [album] };
+        } else {
+          acc[bandId].albums = [...acc[bandId].albums, album];
+        }
 
-          return acc;
-        },
-        {}
-      );
+        return acc;
+      }, {});
 
       const allBandWithAlbum = Object.values(grouped);
 
@@ -146,7 +145,7 @@ describe('sql-query', () => {
 
     expect(queryResult).toStrictEqual({
       albums: [{ id: 1, name: 'Cybion', releaseDate: new Date('2009-01-16T00:00:00.000Z') }],
-      author: { id: 1, name: 'Kalisia', preferences: { language: 'France' } },
+      band: { id: 1, name: 'Kalisia', preferences: { language: 'France' } },
     });
 
     const queryResult2 = await findBandWithAlbumsById(2).transact(pool);
@@ -156,7 +155,7 @@ describe('sql-query', () => {
         { id: 2, name: 'Kodama', releaseDate: new Date('2016-09-30T00:00:00Z') },
         { id: 3, name: 'Écailles de Lune', releaseDate: new Date('2010-03-26T00:00:00Z') },
       ],
-      author: { id: 2, name: 'Alcest', preferences: null },
+      band: { id: 2, name: 'Alcest', preferences: null },
     });
   });
 });
