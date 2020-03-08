@@ -142,25 +142,43 @@ const toDate: DeserDefinition<Date> = {
   errorMessage: (value) => `'${value}' is not a Date`,
 };
 
-const basicNamedSerializer = <A>({ guard, errorMessage }: DeserDefinition<A>) => (
+type BasicNamedSqlDeserializer<A> = NamedSqlDeserializer<A> & { orNull(): NamedSqlDeserializer<A | null> };
+const basicNamedDeserializer = <A>({ guard, errorMessage }: DeserDefinition<A>) => (
   col: string
-): NamedSqlDeserializer<A> => {
-  return new NamedSqlDeserializer<A>(
-    (row: RowObject): Result<A> => {
-      if (!Object.prototype.hasOwnProperty.call(row, col)) {
-        throw new Error(`No column named '${col}' exists in the list of cols '${Object.keys(row).join(', ')}'`);
-      }
-      const value = row[col];
-      if (guard(value)) {
-        return Success.of(value);
-      } else {
-        return Failure.raise(`Column '${col}': ${errorMessage(value)}`);
-      }
+): BasicNamedSqlDeserializer<A> => {
+  const deserialize = (row: RowObject): Result<A> => {
+    if (!Object.prototype.hasOwnProperty.call(row, col)) {
+      throw new Error(`No column named '${col}' exists in the list of cols '${Object.keys(row).join(', ')}'`);
     }
-  );
+    const value = row[col];
+    if (guard(value)) {
+      return Success.of(value);
+    } else {
+      return Failure.raise(`Column '${col}': ${errorMessage(value)}`);
+    }
+  };
+  return new (class extends NamedSqlDeserializer<A> {
+    constructor() {
+      super(deserialize);
+    }
+
+    orNull(): NamedSqlDeserializer<A | null> {
+      return new NamedSqlDeserializer<A | null>(
+        (row: RowObject): Result<A | null> => {
+          return deserialize(row).recover((messages) => {
+            if (row[col] === null) {
+              return Success.of(null);
+            } else {
+              return new Failure([...messages, `Column '${col}': '${row[col]}' is not null`]);
+            }
+          });
+        }
+      );
+    }
+  })();
 };
 
-type BasicPositionDeserializer<A> = PositionSqlDeserializer<A> & { orNull: () => PositionSqlDeserializer<A | null> };
+type BasicPositionDeserializer<A> = PositionSqlDeserializer<A> & { orNull(): PositionSqlDeserializer<A | null> };
 
 function basicPositionDeserializer<A>({ guard, errorMessage }: DeserDefinition<A>): BasicPositionDeserializer<A> {
   const deserialize = (row: unknown[], idx: number): Result<A> => {
@@ -175,7 +193,7 @@ function basicPositionDeserializer<A>({ guard, errorMessage }: DeserDefinition<A
       return Failure.raise(`Column '${idx}': ` + errorMessage(value));
     }
   };
-  return new (class Prout extends PositionSqlDeserializer<A> {
+  return new (class extends PositionSqlDeserializer<A> {
     constructor() {
       super(deserialize, 1);
     }
@@ -212,10 +230,10 @@ export const deser = {
 } as const;
 
 export const namedDeser = {
-  toBigInt: (col: string) => basicNamedSerializer(toString)(col).transform(strToBigInt),
-  toNumber: basicNamedSerializer(toNumber),
-  toInteger: basicNamedSerializer(toInteger),
-  toString: basicNamedSerializer(toString),
-  toDate: basicNamedSerializer(toDate),
-  toNull: basicNamedSerializer(toNull),
+  toBigInt: (col: string) => basicNamedDeserializer(toString)(col).transform(strToBigInt),
+  toNumber: basicNamedDeserializer(toNumber),
+  toInteger: basicNamedDeserializer(toInteger),
+  toString: basicNamedDeserializer(toString),
+  toDate: basicNamedDeserializer(toDate),
+  toNull: basicNamedDeserializer(toNull),
 } as const;

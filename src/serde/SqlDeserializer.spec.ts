@@ -84,6 +84,19 @@ describe('orNull', () => {
     const result = deserWithNull.deserialize([1]);
     expect(result).toStrictEqual(new Failure(["Column '0': '1' is not a string", "Column '0': '1' is not null"]));
   });
+
+  it('should support a simple way to set a nullable base named deserializer', () => {
+    const deserWithNull = namedDeser.toString('id').orNull();
+
+    const result = deserWithNull.deserialize({ id: null });
+    expect(result).toStrictEqual(Success.of(null));
+  });
+  it('should support display a clear error message for base named deserializer', () => {
+    const deserWithNull = namedDeser.toString('id').orNull();
+
+    const result = deserWithNull.deserialize({ id: 1 });
+    expect(result).toStrictEqual(new Failure(["Column 'id': '1' is not a string", "Column 'id': '1' is not null"]));
+  });
 });
 
 describe('sequenceDeserRecord', () => {
