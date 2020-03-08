@@ -33,9 +33,7 @@ describe('sql-query', () => {
         await query.strictUnique(deser.toInteger).transact(pool);
         fail('This call should fail');
       } catch (e) {
-        expect(e.message).toStrictEqual(
-          "Query 'SELECT id FROM (SELECT 12 as id) a WHERE a.id != 12' returns 0 row(s)"
-        );
+        expect(e.message).toStrictEqual("Query 'SELECT id FROM (SELECT 12 as id) a WHERE a.id != 12' returns 0 row(s)");
       }
     });
 

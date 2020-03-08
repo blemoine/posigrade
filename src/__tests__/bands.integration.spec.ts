@@ -24,26 +24,35 @@ type AuthorWithAlbumsCreate = {
   albums: ReadonlyArray<{ name: string; releaseDate: Date }>;
 };
 
+function insertBand(name: string, preferences: object | null): ConnectionIO<number> {
+  const preferencesValue = preferences ? JSON.stringify(preferences) : null;
+  return sql`INSERT INTO bands(name, preferences) VALUES(${name}, ${preferencesValue}) RETURNING id`.strictUnique(
+    deser.toInteger
+  );
+}
+
+function insertAlbum(name: string, releaseDate: Date): ConnectionIO<number> {
+  return sql`INSERT INTO albums(name, release_date) VALUES (${name}, ${releaseDate.toISOString()}) RETURNING id`.strictUnique(
+    deser.toInteger
+  );
+}
+
 function createAuthorWithAlbums(
   createModel: AuthorWithAlbumsCreate
 ): ConnectionIO<{ bandId: number; albumIds: ReadonlyArray<number> }> {
   const { name, preferences, albums } = createModel;
-  const deserId = deser.toInteger;
-  return sql`INSERT INTO bands(name, preferences) VALUES(${name}, ${JSON.stringify(preferences)}) RETURNING id`
-    .strictUnique(deserId)
-    .flatMap((bandId) => {
-      return ConnectionIO.sequence(
-        albums.map(({ name, releaseDate }) =>
-          sql`INSERT INTO albums(name, release_date) VALUES (${name}, ${releaseDate.toISOString()}) RETURNING id`
-            .strictUnique(deserId)
-            .flatMap((albumId) => {
-              return sql`INSERT INTO bands_albums(band_id, album_id) VALUES(${bandId}, ${albumId})`
-                .update()
-                .andThen(ConnectionIO.of(albumId));
-            })
+
+  return insertBand(name, preferences).flatMap((bandId) =>
+    ConnectionIO.sequence(
+      albums.map(({ name, releaseDate }) =>
+        insertAlbum(name, releaseDate).flatMap((albumId) =>
+          sql`INSERT INTO bands_albums(band_id, album_id) VALUES(${bandId}, ${albumId})`
+            .update()
+            .andThen(ConnectionIO.of(albumId))
         )
-      ).map((albumIds) => ({ bandId, albumIds }));
-    });
+      )
+    ).map((albumIds) => ({ bandId, albumIds }))
+  );
 }
 
 describe('sql-query', () => {
@@ -76,7 +85,7 @@ describe('sql-query', () => {
       }),
       createAuthorWithAlbums({
         name: 'Alcest',
-        preferences: { language: 'France' },
+        preferences: null,
         albums: [
           { name: 'Kodama', releaseDate: new Date('2016-09-30T00:00:00Z') },
           { name: 'Écailles de Lune', releaseDate: new Date('2010-03-26T00:00:00Z') },
