@@ -71,6 +71,21 @@ describe('SqlDeserialize', () => {
   });
 });
 
+describe('orNull', () => {
+  it('should support a simple way to set a nullable base position deserializer', () => {
+    const deserWithNull = deser.toString.orNull();
+
+    const result = deserWithNull.deserialize([null]);
+    expect(result).toStrictEqual(Success.of(null));
+  });
+  it('should support display a clear error message', () => {
+    const deserWithNull = deser.toString.orNull();
+
+    const result = deserWithNull.deserialize([1]);
+    expect(result).toStrictEqual(new Failure(["Column '0': '1' is not a string", "Column '0': '1' is not null"]));
+  });
+});
+
 describe('sequenceDeserRecord', () => {
   it('should support the deserialization without an explicit column name', () => {
     const userDeser = NamedSqlDeserializer.sequenceDeserRecord({

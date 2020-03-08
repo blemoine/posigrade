@@ -160,8 +160,10 @@ const basicNamedSerializer = <A>({ guard, errorMessage }: DeserDefinition<A>) =>
   );
 };
 
-function basicPositionSerializer<A>({ guard, errorMessage }: DeserDefinition<A>): PositionSqlDeserializer<A> {
-  return new PositionSqlDeserializer<A>((row: unknown[], idx: number): Result<A> => {
+type BasicPositionDeserializer<A> = PositionSqlDeserializer<A> & { orNull: () => PositionSqlDeserializer<A | null> };
+
+function basicPositionDeserializer<A>({ guard, errorMessage }: DeserDefinition<A>): BasicPositionDeserializer<A> {
+  const deserialize = (row: unknown[], idx: number): Result<A> => {
     if (row.length <= idx) {
       return Failure.raise(`There must be at least ${idx} values in a row`);
     }
@@ -172,7 +174,24 @@ function basicPositionSerializer<A>({ guard, errorMessage }: DeserDefinition<A>)
     } else {
       return Failure.raise(`Column '${idx}': ` + errorMessage(value));
     }
-  }, 1);
+  };
+  return new (class Prout extends PositionSqlDeserializer<A> {
+    constructor() {
+      super(deserialize, 1);
+    }
+
+    orNull(): PositionSqlDeserializer<A | null> {
+      return new PositionSqlDeserializer<A | null>((row: unknown[], idx: number): Result<A | null> => {
+        return deserialize(row, idx).recover((messages) => {
+          if (row.length > idx && row[idx] === null) {
+            return Success.of(null);
+          } else {
+            return new Failure([...messages, `Column '${idx}': '${row[idx]}' is not null`]);
+          }
+        });
+      }, 1);
+    }
+  })();
 }
 
 const strToBigInt = (s: string): Result<BigInt> => {
@@ -184,12 +203,12 @@ const strToBigInt = (s: string): Result<BigInt> => {
 };
 
 export const deser = {
-  toBigInt: basicPositionSerializer(toString).transform(strToBigInt),
-  toNumber: basicPositionSerializer(toNumber),
-  toInteger: basicPositionSerializer(toInteger),
-  toString: basicPositionSerializer(toString),
-  toDate: basicPositionSerializer(toDate),
-  toNull: basicPositionSerializer(toNull),
+  toBigInt: basicPositionDeserializer(toString).transform(strToBigInt),
+  toNumber: basicPositionDeserializer(toNumber),
+  toInteger: basicPositionDeserializer(toInteger),
+  toString: basicPositionDeserializer(toString),
+  toDate: basicPositionDeserializer(toDate),
+  toNull: basicPositionDeserializer(toNull),
 } as const;
 
 export const namedDeser = {

@@ -16,7 +16,7 @@ export class Success<T> {
     return this.value;
   }
 
-  recover<B>(_fn: () => Result<B>): Result<T | B> {
+  recover<B>(_fn: (messages: ReadonlyArray<string>) => Result<B>): Result<T | B> {
     return this;
   }
 
@@ -39,8 +39,8 @@ export class Failure<T> {
   getOrThrow(): T {
     throw new Error(this.messages.join(', '));
   }
-  recover<B>(fn: () => Result<B>): Result<T | B> {
-    return fn();
+  recover<B>(fn: (messages: ReadonlyArray<string>) => Result<B>): Result<T | B> {
+    return fn(this.messages);
   }
 
   zip<B>(result: Result<B>): Result<[T, B]> {
