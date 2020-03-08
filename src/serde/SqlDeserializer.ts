@@ -16,7 +16,7 @@ export class NamedSqlDeserializer<T> {
       return acc.zipWith(deser, (a, b) => ({ ...a, [key]: b }));
     }, new NamedSqlDeserializer(() => Success.of({}))) as NamedSqlDeserializer<A>;
   }
-  constructor(private _deserialize: (row: RowObject) => Result<T>) {}
+  constructor(protected _deserialize: (row: RowObject) => Result<T>) {}
 
   deserialize(row: RowObject): Result<T> {
     return this._deserialize(row);
@@ -73,7 +73,10 @@ export class PositionSqlDeserializer<T> {
     }, new PositionSqlDeserializer(() => Success.of([]), 0)) as PositionSqlDeserializer<A>;
   }
 
-  constructor(private _deserialize: (row: unknown[], idxOrName: number) => Result<T>, private currentIdxSize: number) {}
+  constructor(
+    protected _deserialize: (row: unknown[], idxOrName: number) => Result<T>,
+    protected currentIdxSize: number
+  ) {}
 
   map<B>(mapper: (t: T) => B): PositionSqlDeserializer<B> {
     const parentDeser = this._deserialize;
@@ -142,74 +145,73 @@ const toDate: DeserDefinition<Date> = {
   errorMessage: (value) => `'${value}' is not a Date`,
 };
 
-type BasicNamedSqlDeserializer<A> = NamedSqlDeserializer<A> & { orNull(): NamedSqlDeserializer<A | null> };
-const basicNamedDeserializer = <A>({ guard, errorMessage }: DeserDefinition<A>) => (
-  col: string
-): BasicNamedSqlDeserializer<A> => {
-  const deserialize = (row: RowObject): Result<A> => {
-    if (!Object.prototype.hasOwnProperty.call(row, col)) {
-      throw new Error(`No column named '${col}' exists in the list of cols '${Object.keys(row).join(', ')}'`);
-    }
-    const value = row[col];
-    if (guard(value)) {
-      return Success.of(value);
-    } else {
-      return Failure.raise(`Column '${col}': ${errorMessage(value)}`);
-    }
-  };
-  return new (class extends NamedSqlDeserializer<A> {
-    constructor() {
-      super(deserialize);
-    }
-
-    orNull(): NamedSqlDeserializer<A | null> {
-      return new NamedSqlDeserializer<A | null>(
-        (row: RowObject): Result<A | null> => {
-          return deserialize(row).recover((messages) => {
-            if (row[col] === null) {
-              return Success.of(null);
-            } else {
-              return new Failure([...messages, `Column '${col}': '${row[col]}' is not null`]);
-            }
-          });
+class BasicNamedSqlDeserializer<A> extends NamedSqlDeserializer<A> {
+  constructor({ guard, errorMessage }: DeserDefinition<A>, private col: string) {
+    super(
+      (row: RowObject): Result<A> => {
+        if (!Object.prototype.hasOwnProperty.call(row, col)) {
+          throw new Error(`No column named '${col}' exists in the list of cols '${Object.keys(row).join(', ')}'`);
         }
-      );
-    }
-  })();
-};
+        const value = row[col];
+        if (guard(value)) {
+          return Success.of(value);
+        } else {
+          return Failure.raise(`Column '${col}': ${errorMessage(value)}`);
+        }
+      }
+    );
+  }
 
-type BasicPositionDeserializer<A> = PositionSqlDeserializer<A> & { orNull(): PositionSqlDeserializer<A | null> };
-
-function basicPositionDeserializer<A>({ guard, errorMessage }: DeserDefinition<A>): BasicPositionDeserializer<A> {
-  const deserialize = (row: unknown[], idx: number): Result<A> => {
-    if (row.length <= idx) {
-      return Failure.raise(`There must be at least ${idx} values in a row`);
-    }
-
-    const value = row[idx];
-    if (guard(value)) {
-      return Success.of(value);
-    } else {
-      return Failure.raise(`Column '${idx}': ` + errorMessage(value));
-    }
-  };
-  return new (class extends PositionSqlDeserializer<A> {
-    constructor() {
-      super(deserialize, 1);
-    }
-
-    orNull(): PositionSqlDeserializer<A | null> {
-      return new PositionSqlDeserializer<A | null>((row: unknown[], idx: number): Result<A | null> => {
-        return deserialize(row, idx).recover((messages) => {
-          if (row.length > idx && row[idx] === null) {
+  orNull(): NamedSqlDeserializer<A | null> {
+    return new NamedSqlDeserializer<A | null>(
+      (row: RowObject): Result<A | null> => {
+        return this._deserialize(row).recover((messages) => {
+          if (row[this.col] === null) {
             return Success.of(null);
           } else {
-            return new Failure([...messages, `Column '${idx}': '${row[idx]}' is not null`]);
+            return new Failure([...messages, `Column '${this.col}': '${row[this.col]}' is not null`]);
           }
         });
-      }, 1);
-    }
-  })();
+      }
+    );
+  }
+}
+
+const basicNamedDeserializer = <A>(deserDef: DeserDefinition<A>) => (col: string): BasicNamedSqlDeserializer<A> => {
+  return new BasicNamedSqlDeserializer<A>(deserDef, col);
+};
+
+class BasicPositionDeserializer<A> extends PositionSqlDeserializer<A> {
+  constructor({ guard, errorMessage }: DeserDefinition<A>) {
+    super((row: unknown[], idx: number): Result<A> => {
+      if (row.length <= idx) {
+        return Failure.raise(`There must be at least ${idx} values in a row`);
+      }
+
+      const value = row[idx];
+      if (guard(value)) {
+        return Success.of(value);
+      } else {
+        return Failure.raise(`Column '${idx}': ` + errorMessage(value));
+      }
+    }, 1);
+  }
+
+  orNull(): PositionSqlDeserializer<A | null> {
+    return new PositionSqlDeserializer<A | null>((row: unknown[], idx: number): Result<A | null> => {
+      return this._deserialize(row, idx).recover((messages) => {
+        if (row.length > idx && row[idx] === null) {
+          return Success.of(null);
+        } else {
+          return new Failure([...messages, `Column '${idx}': '${row[idx]}' is not null`]);
+        }
+      });
+    }, this.currentIdxSize);
+  }
+}
+
+function basicPositionDeserializer<A>(deserDef: DeserDefinition<A>): BasicPositionDeserializer<A> {
+  return new BasicPositionDeserializer<A>(deserDef);
 }
 
 const strToBigInt = (s: string): Result<BigInt> => {
