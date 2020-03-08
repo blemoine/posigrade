@@ -30,19 +30,13 @@ function createAuthorWithAlbums(
   const { name, preferences, albums } = createModel;
   const deserId = deser.toInteger;
   return sql`INSERT INTO bands(name, preferences) VALUES(${name}, ${JSON.stringify(preferences)}) RETURNING id`
-    .unique(deserId)
+    .strictUnique(deserId)
     .flatMap((bandId) => {
-      if (bandId === null) {
-        throw new Error(`Failed to get a bandId`);
-      }
       return ConnectionIO.sequence(
         albums.map(({ name, releaseDate }) =>
           sql`INSERT INTO albums(name, release_date) VALUES (${name}, ${releaseDate.toISOString()}) RETURNING id`
-            .unique(deserId)
+            .strictUnique(deserId)
             .flatMap((albumId) => {
-              if (albumId === null) {
-                throw new Error('Failed ot get an albumId');
-              }
               return sql`INSERT INTO bands_albums(band_id, album_id) VALUES(${bandId}, ${albumId})`
                 .update()
                 .andThen(ConnectionIO.of(albumId));
