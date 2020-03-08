@@ -80,6 +80,29 @@ function findBandWithAlbumsById(id: number): ConnectionIO<BandWithAlbums | null>
     });
 }
 
+function findBandWithAlbums(): ConnectionIO<Array<BandWithAlbums>> {
+  return sql`
+        SELECT b.id, b.name, b.preferences, a.id, a.name, a.release_date 
+        FROM bands b 
+          LEFT JOIN bands_albums ba ON ba.band_id = b.id 
+          LEFT JOIN albums a ON a.id = ba.album_id`
+    .list(bandAndAlbumDeser)
+    .map((arr) => {
+      const grouped = arr.reduce<{ [bandId: string]: BandWithAlbums }>((acc, { band, album }) => {
+        const bandId = band.id;
+        if (!acc[bandId]) {
+          acc[bandId] = { band, albums: [album] };
+        } else {
+          acc[bandId].albums = [...acc[bandId].albums, album];
+        }
+
+        return acc;
+      }, {});
+
+      return Object.values(grouped).sort(({ band: band1 }, { band: band2 }) => band1.name.localeCompare(band2.name));
+    });
+}
+
 function createBandWithAlbums(
   createModel: BandWithAlbumsCreate
 ): ConnectionIO<{ bandId: number; albumIds: ReadonlyArray<number> }> {
@@ -141,21 +164,26 @@ describe('sql-query', () => {
       { bandId: 2, albumIds: [2, 3] },
     ]);
 
-    const queryResult = await findBandWithAlbumsById(1).transact(pool);
-
-    expect(queryResult).toStrictEqual({
+    const kalisia = {
       albums: [{ id: 1, name: 'Cybion', releaseDate: new Date('2009-01-16T00:00:00.000Z') }],
       band: { id: 1, name: 'Kalisia', preferences: { language: 'France' } },
-    });
-
-    const queryResult2 = await findBandWithAlbumsById(2).transact(pool);
-
-    expect(queryResult2).toStrictEqual({
+    };
+    const alcest = {
       albums: [
         { id: 2, name: 'Kodama', releaseDate: new Date('2016-09-30T00:00:00Z') },
         { id: 3, name: 'Écailles de Lune', releaseDate: new Date('2010-03-26T00:00:00Z') },
       ],
       band: { id: 2, name: 'Alcest', preferences: null },
-    });
+    };
+
+    const queryResult = await findBandWithAlbumsById(1).transact(pool);
+    expect(queryResult).toStrictEqual(kalisia);
+
+    const queryResult2 = await findBandWithAlbumsById(2).transact(pool);
+    expect(queryResult2).toStrictEqual(alcest);
+
+    const queryAllResults = await findBandWithAlbums().transact(pool);
+
+    expect(queryAllResults).toStrictEqual([alcest, kalisia]);
   });
 });
