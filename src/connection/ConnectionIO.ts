@@ -6,6 +6,14 @@ export class ConnectionIO<A> {
     return new ConnectionIO<A>(() => Promise.resolve(a));
   }
   static empty: ConnectionIO<void> = new ConnectionIO<void>(() => Promise.resolve());
+  static sequence<T extends ReadonlyArray<any>>(arr: { [K in keyof T]: ConnectionIO<T[K]> }): ConnectionIO<T> {
+    if (arr.length === 0) {
+      return ConnectionIO.of([]) as any;
+    }
+    const [head, ...tail] = arr;
+
+    return head.zip(...tail) as any;
+  }
   constructor(private run: (client: ClientBase) => Promise<A>) {}
 
   map<B>(mapper: (a: A) => B): ConnectionIO<B> {
@@ -19,6 +27,9 @@ export class ConnectionIO<A> {
   flatMap<B>(mapper: (a: A) => ConnectionIO<B>): ConnectionIO<B> {
     const parentRun = this.run;
     return new ConnectionIO<B>((client) => parentRun(client).then((a) => mapper(a).run(client)));
+  }
+  andThen<B>(connectionIo: ConnectionIO<B>): ConnectionIO<B> {
+    return this.flatMap(() => connectionIo);
   }
 
   zip<T extends Array<any>>(...connectionIos: { [K in keyof T]: ConnectionIO<T[K]> }): ConnectionIO<Unshift<T, A>> {

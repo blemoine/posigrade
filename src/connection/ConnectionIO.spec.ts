@@ -60,4 +60,22 @@ describe('ConnectionIO', () => {
 
     expect(values).toStrictEqual([1, 2, 3]);
   });
+
+  describe('ConnectionIO.sequence', () => {
+    test('it should return an empty array if the input array is empty', async () => {
+      const arr = ConnectionIO.sequence([]);
+
+      const result = await arr.transact(pool);
+
+      expect(result).toStrictEqual([]);
+    });
+
+    test('it should return all the connections wrapped', async () => {
+      const arr = ConnectionIO.sequence([ConnectionIO.of(1), ConnectionIO.of(2), ConnectionIO.of(3)] as const);
+
+      const result = await arr.transact(pool);
+
+      expect(result).toStrictEqual([1, 2, 3]);
+    });
+  });
 });
