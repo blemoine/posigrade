@@ -137,7 +137,7 @@ describe('sqlFrag', () => {
     );
   });
 
-  it('should support a real case concat', () => {
+  it('should support concat when first query has no parameters', () => {
     const fr1 = sqlFrag`SELECT * FROM poutine `;
     const fr2 = sqlFrag`WHERE id = ${1}`;
 
@@ -147,6 +147,19 @@ describe('sqlFrag', () => {
       new SqlQuery({
         text: 'SELECT * FROM poutine WHERE id = $1',
         values: [1],
+      })
+    );
+  });
+  it('should support concat when last query has no parameters', () => {
+    const fr1 = sqlFrag`SELECT ${'id'} FROM poutine `;
+    const fr2 = sqlFrag`WHERE id = 2`;
+
+    const query = fr1.concat(fr2).toQuery();
+
+    expect(query).toStrictEqual(
+      new SqlQuery({
+        text: 'SELECT $1 FROM poutine WHERE id = 2',
+        values: ['id'],
       })
     );
   });
