@@ -15,12 +15,14 @@ export class SqlFragment {
   constructor(private strings: ReadonlyArray<string>, private values: SupportedValueType[]) {}
 
   concat(fr: SqlFragment): SqlFragment {
+    const firstFrStr = fr.strings[0];
+    if (this.values.length === 0) {
+      return new SqlFragment([this.strings[0] + firstFrStr, ...fr.strings.slice(1)], [...this.values, ...fr.values]);
+    }
     const lastStr = this.strings[this.strings.length - 1];
     const baseStr = lastStr === '' ? this.strings.slice(0, this.strings.length - 1) : this.strings;
 
-    const firstFrStr = fr.strings[0];
     const baseFrStr = firstFrStr === '' ? fr.strings.slice(1) : fr.strings;
-
     const strings = [...baseStr, ...baseFrStr];
     return new SqlFragment(strings, [...this.values, ...fr.values]);
   }
@@ -29,6 +31,8 @@ export class SqlFragment {
     return sql(this.strings, ...this.values);
   }
 }
-export function sqlFrag(strings: TemplateStringsArray, ...values: SupportedValueType[]): SqlFragment {
-  return new SqlFragment(strings, values);
+export function sqlFrag(strings: TemplateStringsArray | string, ...values: SupportedValueType[]): SqlFragment {
+  const strs = typeof strings === 'string' ? [strings] : strings;
+
+  return new SqlFragment(strs, values);
 }

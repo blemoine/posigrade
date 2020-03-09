@@ -1,6 +1,7 @@
 import { Pool } from 'pg';
-import { sql } from '../query/sql-parser';
+import { sql, sqlFrag } from '../query/sql-parser';
 import { ConnectionIO, deser, PositionSqlDeserializer } from '..';
+import { cannotHappen } from '../utils/cannotHappen';
 
 type Band = {
   id: number;
@@ -50,57 +51,55 @@ const bandAndAlbumDeser: PositionSqlDeserializer<{
   band: { id: bandId, name: bandName, preferences },
   album: { id: albumId, name: albumName, releaseDate },
 }));
-function findBandWithAlbumsById(id: number): ConnectionIO<BandWithAlbums | null> {
-  return sql`
-        SELECT b.id, b.name, b.preferences, a.id, a.name, a.release_date 
-        FROM bands b 
-          LEFT JOIN bands_albums ba ON ba.band_id = b.id 
-          LEFT JOIN albums a ON a.id = ba.album_id 
-        WHERE b.id = ${id}`
-    .list(bandAndAlbumDeser)
-    .map((arr) => {
-      const grouped = arr.reduce<{ [bandId: string]: BandWithAlbums }>((acc, { band, album }) => {
-        const bandId = band.id;
-        if (!acc[bandId]) {
-          acc[bandId] = { band, albums: [album] };
-        } else {
-          acc[bandId].albums = [...acc[bandId].albums, album];
-        }
 
-        return acc;
-      }, {});
+type BandFilter = { field: 'id'; operator: 'eq'; value: number };
 
-      const allBandWithAlbum = Object.values(grouped);
+function findBandWithAlbums(filters: Array<BandFilter> = []): ConnectionIO<Array<BandWithAlbums>> {
+  const clauses =
+    filters.length > 0
+      ? sqlFrag` WHERE `.concat(
+          filters
+            .map(({ field, operator, value }) => {
+              const op = operator === 'eq' ? sqlFrag` = ` : cannotHappen(operator);
+              return sqlFrag('b.' + field)
+                .concat(op)
+                .concat(sqlFrag`${value}`);
+            })
+            .reduce((s1, s2) => s1.concat(s2))
+        )
+      : sqlFrag``;
 
-      if (allBandWithAlbum.length === 1 || allBandWithAlbum.length === 0) {
-        return allBandWithAlbum[0] || null;
-      } else {
-        throw new Error(`There should be only one band, got ${allBandWithAlbum.length}`);
-      }
-    });
-}
-
-function findBandWithAlbums(): ConnectionIO<Array<BandWithAlbums>> {
-  return sql`
+  const sqlQuery = sqlFrag`
         SELECT b.id, b.name, b.preferences, a.id, a.name, a.release_date 
         FROM bands b 
           LEFT JOIN bands_albums ba ON ba.band_id = b.id 
           LEFT JOIN albums a ON a.id = ba.album_id`
-    .list(bandAndAlbumDeser)
-    .map((arr) => {
-      const grouped = arr.reduce<{ [bandId: string]: BandWithAlbums }>((acc, { band, album }) => {
-        const bandId = band.id;
-        if (!acc[bandId]) {
-          acc[bandId] = { band, albums: [album] };
-        } else {
-          acc[bandId].albums = [...acc[bandId].albums, album];
-        }
+    .concat(clauses)
+    .toQuery();
 
-        return acc;
-      }, {});
+  return sqlQuery.list(bandAndAlbumDeser).map((arr) => {
+    const grouped = arr.reduce<{ [bandId: string]: BandWithAlbums }>((acc, { band, album }) => {
+      const bandId = band.id;
+      if (!acc[bandId]) {
+        acc[bandId] = { band, albums: [album] };
+      } else {
+        acc[bandId].albums = [...acc[bandId].albums, album];
+      }
 
-      return Object.values(grouped).sort(({ band: band1 }, { band: band2 }) => band1.name.localeCompare(band2.name));
-    });
+      return acc;
+    }, {});
+
+    return Object.values(grouped).sort(({ band: band1 }, { band: band2 }) => band1.name.localeCompare(band2.name));
+  });
+}
+function findBandWithAlbumsById(id: number): ConnectionIO<BandWithAlbums | null> {
+  return findBandWithAlbums([{ operator: 'eq', field: 'id', value: id }]).map((allBandWithAlbum) => {
+    if (allBandWithAlbum.length === 1 || allBandWithAlbum.length === 0) {
+      return allBandWithAlbum[0] || null;
+    } else {
+      throw new Error(`There should be only one band, got ${allBandWithAlbum.length}`);
+    }
+  });
 }
 
 function createBandWithAlbums(

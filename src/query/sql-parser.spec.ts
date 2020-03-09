@@ -136,4 +136,18 @@ describe('sqlFrag', () => {
       })
     );
   });
+
+  it('should support a real case concat', () => {
+    const fr1 = sqlFrag`SELECT * FROM poutine `;
+    const fr2 = sqlFrag`WHERE id = ${1}`;
+
+    const query = fr1.concat(fr2).toQuery();
+
+    expect(query).toStrictEqual(
+      new SqlQuery({
+        text: 'SELECT * FROM poutine WHERE id = $1',
+        values: [1],
+      })
+    );
+  });
 });
