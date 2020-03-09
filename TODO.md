@@ -2,4 +2,3 @@
 - code pour tester les query
 - creer un raccourci pour le"orNull"
 - concatStr for fragment
-- FAQ : dynamic query / fragment
