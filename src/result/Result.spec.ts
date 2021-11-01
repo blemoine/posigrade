@@ -1,12 +1,15 @@
 import { Failure, Result, sequenceResult, Success } from './Result';
 import * as fc from 'fast-check';
 import { Arbitrary } from 'fast-check';
+import { NonEmptyArray } from '../utils/non-empty-array';
 
 const id = <T>(x: T): T => x;
 
 const arbSuccess = fc.anything().map((i) => Success.of(i));
 const arbFailure = fc.string().map((message) => Failure.raise(message));
 const arbResult: Arbitrary<Result<any>> = fc.oneof(arbSuccess, arbFailure);
+const arbNonEmptyArray = <T>(arbT: Arbitrary<T>): Arbitrary<NonEmptyArray<T>> =>
+  arbT.chain((t) => fc.array(arbT).map((arrT) => [t, ...arrT]));
 
 describe('Result', () => {
   describe('zip', () => {
@@ -123,9 +126,9 @@ describe('Result', () => {
 
     it('should accumulate the failures if there is some', () => {
       fc.assert(
-        fc.property(fc.array(fc.anything()), fc.array(arbFailure, { minLength: 1 }), (values, failures) => {
+        fc.property(fc.array(fc.anything()), arbNonEmptyArray(arbFailure), (values, failures) => {
           expect(sequenceResult([...values.map((v) => Success.of(v)), ...failures])).toStrictEqual(
-            new Failure(failures.flatMap((f) => f.messages))
+            new Failure(failures.flatMap((f) => f.messages) as any)
           );
         })
       );

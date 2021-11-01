@@ -1,5 +1,7 @@
 import { ClientBase } from 'pg';
 import { SqlQuery, SupportedValueType } from './sql-query';
+import { addInArray, NonEmptyArray } from '../utils/non-empty-array';
+import { cannotHappen } from '../utils/cannotHappen';
 
 type AdvancedSupportedValueType = SupportedValueType | SqlQuery | SqlConstant;
 
@@ -32,30 +34,25 @@ export function SqlBuilder(client: ClientBase) {
           return q;
         }
       })
-      .reduce<string[]>(
+      .reduce<NonEmptyArray<string>>(
         (acc, v, i) => {
           const txt = strings[i + 1];
           if (v instanceof SqlQuery) {
-            if (v.strings.length > 1) {
-              const [head, ...tail] = v.strings;
+            const [head, ...tail] = v.strings;
+            const accWithoutLast = acc.slice(0, -1);
+            const accLast = acc[acc.length - 1];
+
+            if (tail.length > 0) {
               const last = tail[tail.length - 1];
               const middle = tail.slice(0, -1);
 
-              acc[acc.length - 1] = acc[acc.length - 1] + head;
-              acc.push(...middle);
-              acc.push(last + txt);
-            } else if (v.strings.length === 1) {
-              const str = v.strings[0];
-
-              acc[acc.length - 1] = acc[acc.length - 1] + str + txt;
+              return addInArray(accWithoutLast, accLast + head, ...middle, last + txt);
             } else {
-              acc.push(txt);
+              return addInArray(accWithoutLast, accLast + head + txt);
             }
           } else {
-            acc.push(txt);
+            return addInArray(acc, txt);
           }
-
-          return acc;
         },
         [strings[0]]
       );

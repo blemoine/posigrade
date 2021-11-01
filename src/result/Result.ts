@@ -1,3 +1,5 @@
+import { NonEmptyArray } from '../utils/non-empty-array';
+
 export class Success<T> {
   static of<T>(value: T): Success<T> {
     return new Success(value);
@@ -16,7 +18,7 @@ export class Success<T> {
     return this.value;
   }
 
-  recover<B>(_fn: (messages: ReadonlyArray<string>) => Result<B>): Result<T | B> {
+  recover<B>(_fn: (messages: NonEmptyArray<string>) => Result<B>): Result<T | B> {
     return this;
   }
 
@@ -29,7 +31,7 @@ export class Failure<T> {
     return new Failure<T>([message]);
   }
 
-  constructor(public readonly messages: ReadonlyArray<string>) {}
+  constructor(public readonly messages: NonEmptyArray<string>) {}
   map<B>(_mapper: (t: T) => B): Result<B> {
     return this as any;
   }
@@ -39,7 +41,7 @@ export class Failure<T> {
   getOrThrow(): T {
     throw new Error(this.messages.join(', '));
   }
-  recover<B>(fn: (messages: ReadonlyArray<string>) => Result<B>): Result<T | B> {
+  recover<B>(fn: (messages: NonEmptyArray<string>) => Result<B>): Result<T | B> {
     return fn(this.messages);
   }
 

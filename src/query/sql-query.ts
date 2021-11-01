@@ -1,6 +1,7 @@
 import { ClientBase, QueryConfig } from 'pg';
 import { SqlDeserializer } from '../deserializer/SqlDeserializer';
 import { sequenceResult } from '../result/Result';
+import { NonEmptyArray } from '../utils/non-empty-array';
 
 export type BaseSupportedValueType = string | number | boolean | Date | null;
 export type SupportedValueType = BaseSupportedValueType | Array<BaseSupportedValueType>;
@@ -9,7 +10,7 @@ export class SqlQuery {
   public readonly queryText: string;
   constructor(
     private readonly client: ClientBase,
-    public readonly strings: ReadonlyArray<string>,
+    public readonly strings: NonEmptyArray<string>,
     public readonly values: SupportedValueType[]
   ) {
     this.queryText = strings.reduce((currText, str, i) => {

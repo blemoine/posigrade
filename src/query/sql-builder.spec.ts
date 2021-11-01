@@ -1,5 +1,6 @@
 import { SqlBuilder, SqlConst } from './sql-builder';
 import { ClientBase } from 'pg';
+import { SqlQuery } from './sql-query';
 
 describe('SqlBuilder', () => {
   const fakeClient = {} as ClientBase;
