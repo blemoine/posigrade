@@ -1,7 +1,8 @@
 import { Pool } from 'pg';
-import { sql, sqlFrag } from '../query/sql-parser';
-import { ConnectionIO, deser, PositionSqlDeserializer } from '..';
+import { SqlBuilder, SqlConst } from '../query/sql-builder';
+import { named } from '../deserializer/deserializers';
 import { cannotHappen } from '../utils/cannotHappen';
+import { SqlDeserializer } from '../deserializer/SqlDeserializer';
 
 type Band = {
   id: number;
@@ -24,103 +25,9 @@ type BandWithAlbumsCreate = {
   albums: ReadonlyArray<{ name: string; releaseDate: Date }>;
 };
 
-function insertBand(name: string, preferences: object | null): ConnectionIO<number> {
-  const preferencesValue = preferences ? JSON.stringify(preferences) : null;
-  return sql`INSERT INTO bands(name, preferences) VALUES(${name}, ${preferencesValue}) RETURNING id`.strictUnique(
-    deser.toInteger
-  );
-}
-
-function insertAlbum(name: string, releaseDate: Date): ConnectionIO<number> {
-  return sql`INSERT INTO albums(name, release_date) VALUES (${name}, ${releaseDate.toISOString()}) RETURNING id`.strictUnique(
-    deser.toInteger
-  );
-}
-
-const bandAndAlbumDeser: PositionSqlDeserializer<{
-  band: Band;
-  album: Album;
-}> = PositionSqlDeserializer.sequenceDeser(
-  deser.toInteger,
-  deser.toString,
-  deser.toJsonObject.orNull(),
-  deser.toInteger,
-  deser.toString,
-  deser.toDate
-).map(([bandId, bandName, preferences, albumId, albumName, releaseDate]) => ({
-  band: { id: bandId, name: bandName, preferences },
-  album: { id: albumId, name: albumName, releaseDate },
-}));
-
 type BandFilter = { field: 'id'; operator: 'eq'; value: number };
 
-function findBandWithAlbums(filters: Array<BandFilter> = []): ConnectionIO<Array<BandWithAlbums>> {
-  const clauses =
-    filters.length > 0
-      ? sqlFrag` WHERE `.concat(
-          filters
-            .map(({ field, operator, value }) => {
-              const op = operator === 'eq' ? sqlFrag` = ` : cannotHappen(operator);
-              return sqlFrag('b.' + field)
-                .concat(op)
-                .concat(sqlFrag`${value}`);
-            })
-            .reduce((s1, s2) => s1.concat(s2))
-        )
-      : sqlFrag``;
-
-  const sqlQuery = sqlFrag`
-        SELECT b.id, b.name, b.preferences, a.id, a.name, a.release_date 
-        FROM bands b 
-          LEFT JOIN bands_albums ba ON ba.band_id = b.id 
-          LEFT JOIN albums a ON a.id = ba.album_id`
-    .concat(clauses)
-    .toQuery();
-
-  return sqlQuery.list(bandAndAlbumDeser).map((arr) => {
-    const grouped = arr.reduce<{ [bandId: string]: BandWithAlbums }>((acc, { band, album }) => {
-      const bandId = band.id;
-      if (!acc[bandId]) {
-        acc[bandId] = { band, albums: [album] };
-      } else {
-        acc[bandId].albums = [...acc[bandId].albums, album];
-      }
-
-      return acc;
-    }, {});
-
-    return Object.values(grouped).sort(({ band: band1 }, { band: band2 }) => band1.name.localeCompare(band2.name));
-  });
-}
-function findBandWithAlbumsById(id: number): ConnectionIO<BandWithAlbums | null> {
-  return findBandWithAlbums([{ operator: 'eq', field: 'id', value: id }]).map((allBandWithAlbum) => {
-    if (allBandWithAlbum.length === 1 || allBandWithAlbum.length === 0) {
-      return allBandWithAlbum[0] || null;
-    } else {
-      throw new Error(`There should be only one band, got ${allBandWithAlbum.length}`);
-    }
-  });
-}
-
-function createBandWithAlbums(
-  createModel: BandWithAlbumsCreate
-): ConnectionIO<{ bandId: number; albumIds: ReadonlyArray<number> }> {
-  const { name, preferences, albums } = createModel;
-
-  return insertBand(name, preferences).flatMap((bandId) =>
-    ConnectionIO.sequence(
-      albums.map(({ name, releaseDate }) =>
-        insertAlbum(name, releaseDate).flatMap((albumId) =>
-          sql`INSERT INTO bands_albums(band_id, album_id) VALUES(${bandId}, ${albumId})`
-            .update()
-            .andThen(ConnectionIO.of(albumId))
-        )
-      )
-    ).map((albumIds) => ({ bandId, albumIds }))
-  );
-}
-
-describe('sql-query', () => {
+describe('bands integration test', () => {
   let pool: Pool;
   beforeAll(async () => {
     pool = new Pool({
@@ -131,37 +38,127 @@ describe('sql-query', () => {
     pool.end();
   });
 
-  test('it should support the initialization of bands table', async () => {
-    await sql`CREATE TABLE bands(id SERIAL PRIMARY KEY, name TEXT NOT NULL, preferences JSONB)`
-      .update()
-      .andThen(
-        sql`CREATE TABLE albums(id SERIAL PRIMARY KEY, name TEXT NOT NULL, release_date TIMESTAMPTZ NOT NULL)`.update()
-      )
-      .andThen(
-        sql`CREATE TABLE bands_albums(band_id INTEGER REFERENCES bands(id) NOT NULL, album_id INTEGER REFERENCES albums(id) NOT NULL)`.update()
-      )
-      .transact(pool);
+  it('should support initialization and queries', async () => {
+    const client = await pool.connect();
 
-    const creationResult = await ConnectionIO.sequence([
-      createBandWithAlbums({
-        name: 'Kalisia',
-        preferences: { language: 'France' },
-        albums: [{ name: 'Cybion', releaseDate: new Date('2009-01-16T00:00:00Z') }],
-      }),
-      createBandWithAlbums({
-        name: 'Alcest',
-        preferences: null,
-        albums: [
-          { name: 'Kodama', releaseDate: new Date('2016-09-30T00:00:00Z') },
-          { name: 'Écailles de Lune', releaseDate: new Date('2010-03-26T00:00:00Z') },
-        ],
-      }),
-    ]).transact(pool);
+    const Sql = SqlBuilder(client);
 
-    expect(creationResult).toStrictEqual([
-      { bandId: 1, albumIds: [1] },
-      { bandId: 2, albumIds: [2, 3] },
-    ]);
+    await Sql`CREATE TABLE bands(id SERIAL PRIMARY KEY, name TEXT NOT NULL, preferences JSONB)`.update();
+    await Sql`CREATE TABLE albums(id SERIAL PRIMARY KEY, name TEXT NOT NULL, release_date TIMESTAMPTZ NOT NULL)`.update();
+    await Sql`CREATE TABLE bands_albums(band_id INTEGER REFERENCES bands(id) NOT NULL, album_id INTEGER REFERENCES albums(id) NOT NULL)`.update();
+
+    function insertBand(name: string, preferences: object | null): Promise<number> {
+      const preferencesValue = preferences ? JSON.stringify(preferences) : null;
+      return Sql`INSERT INTO bands(name, preferences) VALUES(${name}, ${preferencesValue}) RETURNING id`
+        .unique(named.toInteger('id'))
+        .then((r) => {
+          if (!r) {
+            throw new Error(`Insert ${name} must return something`);
+          } else {
+            return r;
+          }
+        });
+    }
+
+    function insertAlbum(name: string, releaseDate: Date): Promise<number> {
+      return Sql`INSERT INTO albums(name, release_date) VALUES (${name}, ${releaseDate.toISOString()}) RETURNING id`
+        .unique(named.toInteger('id'))
+        .then((r) => {
+          if (!r) {
+            throw new Error(`Insert ${name} must return something`);
+          } else {
+            return r;
+          }
+        });
+    }
+
+    async function createBandWithAlbums(
+      createModel: BandWithAlbumsCreate
+    ): Promise<{ bandId: number; albumIds: ReadonlyArray<number> }> {
+      const bandId = await insertBand(createModel.name, createModel.preferences);
+      const albumIds = await Promise.all(createModel.albums.map((a) => insertAlbum(a.name, a.releaseDate)));
+
+      await Promise.all(
+        albumIds.map((albumId) =>
+          Sql`INSERT INTO bands_albums(band_id, album_id) VALUES  (${bandId}, ${albumId})`.update()
+        )
+      );
+
+      return { bandId, albumIds };
+    }
+
+    function findBandWithAlbumsById(id: number): Promise<BandWithAlbums | null> {
+      return findBandWithAlbums([{ operator: 'eq', field: 'id', value: id }]).then((allBandWithAlbum) => {
+        if (allBandWithAlbum.length === 1 || allBandWithAlbum.length === 0) {
+          return allBandWithAlbum[0] || null;
+        } else {
+          throw new Error(`There should be only one band, got ${allBandWithAlbum.length}`);
+        }
+      });
+    }
+
+    const bandAndAlbumDeser = SqlDeserializer.fromRecord({
+      bandId: named.toInteger('id'),
+      name: named.toString('name'),
+      albumId: named.toInteger('album_id').or(named.toNull('album_id')), // TODO on peuyt faire mieux que ca
+      albumName: named.toString('album_name').or(named.toNull('album_name')),
+      releaseDate: named.toDate('release_date').or(named.toNull('release_date')),
+      preferences: named.toJsonObject('preferences').or(named.toNull('preferences')),
+    });
+
+    function findBandWithAlbums(filters: Array<BandFilter> = []): Promise<Array<BandWithAlbums>> {
+      const clauses =
+        filters.length > 0
+          ? filters
+              .map(({ field, operator, value }) => {
+                const op = operator === 'eq' ? SqlConst(` = `) : cannotHappen(operator);
+                const fieldConst = SqlConst(field);
+
+                return Sql`b.${fieldConst} ${op} ${value}`;
+              })
+              .reduce((s1, s2) => Sql`${s1} ${s2}`, Sql` WHERE `)
+          : Sql``;
+      const sqlQuery = Sql`SELECT b.id, b.name, b.preferences, a.id as album_id, a.name as album_name, a.release_date 
+          FROM bands b 
+            LEFT JOIN bands_albums ba ON ba.band_id = b.id 
+            LEFT JOIN albums a ON a.id = ba.album_id
+            ${clauses}`;
+
+      return sqlQuery.list(bandAndAlbumDeser).then((arr) => {
+        const grouped = arr.reduce<{ [bandId: string]: BandWithAlbums }>(
+          (acc, { bandId, albumId, albumName, preferences, releaseDate, name }) => {
+            const album = albumId && albumName && releaseDate ? { id: albumId, name: albumName, releaseDate } : null;
+            if (!acc[bandId]) {
+              acc[bandId] = { band: { id: bandId, name, preferences }, albums: album ? [album] : [] };
+            } else if (album) {
+              acc[bandId].albums = [...acc[bandId].albums, album];
+            }
+
+            return acc;
+          },
+          {}
+        );
+
+        return Object.values(grouped).sort(({ band: band1 }, { band: band2 }) => band1.name.localeCompare(band2.name));
+      });
+    }
+
+    const kalisiaAfterCreation = await createBandWithAlbums({
+      name: 'Kalisia',
+      preferences: { language: 'France' },
+      albums: [{ name: 'Cybion', releaseDate: new Date('2009-01-16T00:00:00Z') }],
+    });
+    const alcestAfterCreation = await createBandWithAlbums({
+      name: 'Alcest',
+      preferences: null,
+      albums: [
+        { name: 'Kodama', releaseDate: new Date('2016-09-30T00:00:00Z') },
+        { name: 'Écailles de Lune', releaseDate: new Date('2010-03-26T00:00:00Z') },
+      ],
+    });
+
+    expect(kalisiaAfterCreation).toStrictEqual({ bandId: 1, albumIds: [1] });
+    expect(alcestAfterCreation).toStrictEqual({ bandId: 2, albumIds: [2, 3] });
 
     const kalisia = {
       albums: [{ id: 1, name: 'Cybion', releaseDate: new Date('2009-01-16T00:00:00.000Z') }],
@@ -175,14 +172,16 @@ describe('sql-query', () => {
       band: { id: 2, name: 'Alcest', preferences: null },
     };
 
-    const queryResult = await findBandWithAlbumsById(1).transact(pool);
+    const queryResult = await findBandWithAlbumsById(1);
     expect(queryResult).toStrictEqual(kalisia);
 
-    const queryResult2 = await findBandWithAlbumsById(2).transact(pool);
+    const queryResult2 = await findBandWithAlbumsById(2);
     expect(queryResult2).toStrictEqual(alcest);
 
-    const queryAllResults = await findBandWithAlbums().transact(pool);
+    const queryAllResults = await findBandWithAlbums();
 
     expect(queryAllResults).toStrictEqual([alcest, kalisia]);
+
+    client.release();
   });
 });

@@ -1,49 +1,46 @@
-import { QueryArrayResult, QueryConfig, QueryResult } from 'pg';
-import { SqlDeserializer } from '../serde/SqlDeserializer';
-import { ConnectionIO } from '../connection/ConnectionIO';
-import { sequence } from '../result/Result';
+import { ClientBase, QueryConfig } from 'pg';
+import { SqlDeserializer } from '../deserializer/SqlDeserializer';
+import { sequenceResult } from '../result/Result';
 
-function mkConnectionIO(
-  queryConfig: QueryConfig,
-  rowMode: 'array' | 'object'
-): ConnectionIO<QueryArrayResult | QueryResult> {
-  return new ConnectionIO((client) => {
-    return client.query({ ...queryConfig, ...(rowMode === 'array' ? { rowMode } : {}) }).catch((err) => {
-      throw new Error(`Error on query '${queryConfig.text}': '${err.message}'`);
-    });
-  });
-}
+export type BaseSupportedValueType = string | number | boolean | Date | null;
+export type SupportedValueType = BaseSupportedValueType | Array<BaseSupportedValueType>;
 
 export class SqlQuery {
-  constructor(public queryConfig: QueryConfig) {}
-
-  list<A>(deserializer: SqlDeserializer<A>): ConnectionIO<Array<A>> {
-    return mkConnectionIO(this.queryConfig, deserializer.rowMode).map(({ rows }) => {
-      return sequence<A>((rows as any[]).map((row) => deserializer.deserialize(row))).getOrThrow();
+  public readonly queryText: string;
+  constructor(
+    private readonly client: ClientBase,
+    public readonly strings: ReadonlyArray<string>,
+    public readonly values: SupportedValueType[]
+  ) {
+    this.queryText = strings.reduce((currText, str, i) => {
+      return currText + '$' + i + str;
     });
+    this.values = values;
   }
 
-  unique<A>(deserializer: SqlDeserializer<A>): ConnectionIO<A | null> {
-    return mkConnectionIO(this.queryConfig, deserializer.rowMode).map(({ rows }) => {
-      if (rows.length > 1) {
-        throw new Error(`Query '${this.queryConfig.text}' returns more than one row`);
-      }
-      if (rows.length === 0) {
-        return null;
-      }
-      return deserializer.deserialize(rows[0]).getOrThrow();
-    });
-  }
-  strictUnique<A>(deserializer: SqlDeserializer<A>): ConnectionIO<A> {
-    return mkConnectionIO(this.queryConfig, deserializer.rowMode).map(({ rows }) => {
-      if (rows.length !== 1) {
-        throw new Error(`Query '${this.queryConfig.text}' returns ${rows.length} row(s)`);
-      }
-      return deserializer.deserialize(rows[0]).getOrThrow();
-    });
+  private getQueryConfig(): QueryConfig {
+    return {
+      text: this.queryText,
+      values: this.values,
+    };
   }
 
-  update(): ConnectionIO<void> {
-    return mkConnectionIO(this.queryConfig, 'array').map(() => {});
+  update(): Promise<void> {
+    return this.client.query(this.getQueryConfig()).then(() => {});
+  }
+
+  async list<T>(deser: SqlDeserializer<T>): Promise<T[]> {
+    const { rows } = await this.client.query(this.getQueryConfig());
+
+    return sequenceResult(rows.map((row) => deser.deserialize(row))).getOrThrow();
+  }
+
+  async unique<T>(deser: SqlDeserializer<T>): Promise<T | null> {
+    const { rows } = await this.client.query(this.getQueryConfig());
+    if (rows.length === 0) {
+      return null;
+    } else {
+      return deser.deserialize(rows[0]).getOrThrow();
+    }
   }
 }
