@@ -1,4 +1,4 @@
-import { DeserDefinition, toNamedDeserializer } from './DeserDefinition';
+import { DeserDefinition, NullDeserializer, toNamedDeserializer } from './DeserDefinition';
 
 const toNumberDef: DeserDefinition<number> = {
   guard: (value): value is number => typeof value === 'number',
@@ -13,10 +13,6 @@ const toStringDef: DeserDefinition<string> = {
   errorMessage: (value) => `'${value}' is not a string`,
 };
 
-const toNullDef: DeserDefinition<null> = {
-  guard: (value): value is null => value === null,
-  errorMessage: (value) => `'${value}' is not null`,
-};
 const toDateDef: DeserDefinition<Date> = {
   guard: (value): value is Date => value instanceof Date,
   errorMessage: (value) => `'${value}' is not a Date`,
@@ -30,7 +26,7 @@ export const named = {
   toNumber: toNamedDeserializer(toNumberDef),
   toString: toNamedDeserializer(toStringDef),
   toInteger: toNamedDeserializer(toIntegerDef),
-  toNull: toNamedDeserializer(toNullDef),
+  toNull: NullDeserializer,
   toDate: toNamedDeserializer(toDateDef),
   toJsonObject: toNamedDeserializer(toJsonObjectDef),
 };

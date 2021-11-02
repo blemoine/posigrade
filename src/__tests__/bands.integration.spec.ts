@@ -98,10 +98,10 @@ describe('bands integration test', () => {
       const bandAndAlbumDeser = SqlDeserializer.fromRecord({
         bandId: named.toInteger.forColumn('id'),
         name: named.toString.forColumn('name'),
-        albumId: named.toInteger.or(named.toNull).forColumn('album_id'),
-        albumName: named.toString.or(named.toNull).forColumn('album_name'),
-        releaseDate: named.toDate.or(named.toNull).forColumn('release_date'),
-        preferences: named.toJsonObject.or(named.toNull).forColumn('preferences'),
+        albumId: named.toInteger.orNull().forColumn('album_id'),
+        albumName: named.toString.orNull().forColumn('album_name'),
+        releaseDate: named.toDate.orNull().forColumn('release_date'),
+        preferences: named.toJsonObject.orNull().forColumn('preferences'),
       });
 
       function findBandWithAlbums(filters: Array<BandFilter> = []): Promise<Array<BandWithAlbums>> {
