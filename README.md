@@ -50,14 +50,14 @@ await client.query('BEGIN');
 
 const deserializer: Deser<T>;
 SQLExecutor(client).transact(SQL => {
-    SQL`SELECT * FROM users WHERE id = 1`.unique(dserializer); // Return Promise<T | null>
+    SQL`SELECT * FROM users WHERE id = 1`.option(dserializer); // Return Promise<T | null>
     SQL`SELECT * FROM users WHERE name ILIKE ${'%test%'}`.list(deserializer); // RETURN Promise<T[]>
     SQL`DELETE FROM users WHERE id = 1`.update() // Return Promise<void>
 })
 
 SQLExecutor(client).run(SQL => {
 const deserializer: Deser<T>;
-    SQL`SELECT * FROM users WHERE id = 1`.unique(dserializer); // Return Promise<T | null>
+    SQL`SELECT * FROM users WHERE id = 1`.option(dserializer); // Return Promise<T | null>
     SQL`SELECT * FROM users WHERE name ILIKE ${'%test%'}`.list(deserializer); // RETURN Promise<T[]>
     SQL`DELETE FROM users WHERE id = 1`.update() // Return Promise<void>
 })

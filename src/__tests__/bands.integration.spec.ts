@@ -47,27 +47,15 @@ describe('bands integration test', () => {
 
       function insertBand(name: string, preferences: object | null): Promise<number> {
         const preferencesValue = preferences ? JSON.stringify(preferences) : null;
-        return Sql`INSERT INTO bands(name, preferences) VALUES(${name}, ${preferencesValue}) RETURNING id`
-          .unique(named.toInteger.forColumn('id'))
-          .then((r) => {
-            if (!r) {
-              throw new Error(`Insert ${name} must return something`);
-            } else {
-              return r;
-            }
-          });
+        return Sql`INSERT INTO bands(name, preferences) VALUES(${name}, ${preferencesValue}) RETURNING id`.unique(
+          named.toInteger.forColumn('id')
+        );
       }
 
       function insertAlbum(name: string, releaseDate: Date): Promise<number> {
-        return Sql`INSERT INTO albums(name, release_date) VALUES (${name}, ${releaseDate.toISOString()}) RETURNING id`
-          .unique(named.toInteger.forColumn('id'))
-          .then((r) => {
-            if (!r) {
-              throw new Error(`Insert ${name} must return something`);
-            } else {
-              return r;
-            }
-          });
+        return Sql`INSERT INTO albums(name, release_date) VALUES (${name}, ${releaseDate.toISOString()}) RETURNING id`.unique(
+          named.toInteger.forColumn('id')
+        );
       }
 
       async function createBandWithAlbums(

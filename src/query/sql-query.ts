@@ -37,10 +37,20 @@ export class SqlQuery {
     return sequenceResult(rows.map((row) => deser.deserialize(row))).getOrThrow();
   }
 
-  async unique<T>(deser: SqlDeserializer<T>): Promise<T | null> {
+  async option<T>(deser: SqlDeserializer<T>): Promise<T | null> {
     const { rows } = await this.client.query(this.getQueryConfig());
     if (rows.length === 0) {
       return null;
+    } else {
+      return deser.deserialize(rows[0]).getOrThrow();
+    }
+  }
+
+  async unique<T>(deser: SqlDeserializer<T>): Promise<T> {
+    const queryConfig = this.getQueryConfig();
+    const { rows } = await this.client.query(queryConfig);
+    if (rows.length === 0) {
+      throw new Error(`No row returned for query ${queryConfig.text}`);
     } else {
       return deser.deserialize(rows[0]).getOrThrow();
     }
