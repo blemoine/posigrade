@@ -95,13 +95,20 @@ describe('bands integration test', () => {
         });
       }
 
-      const bandAndAlbumDeser = SqlDeserializer.fromRecord({
-        bandId: named.toInteger.forColumn('id'),
+      const bandDeser = SqlDeserializer.fromRecord<Band>({
+        id: named.toInteger.forColumn('id'),
         name: named.toString.forColumn('name'),
-        albumId: named.toInteger.orNull().forColumn('album_id'),
-        albumName: named.toString.orNull().forColumn('album_name'),
-        releaseDate: named.toDate.orNull().forColumn('release_date'),
         preferences: named.toJsonObject.orNull().forColumn('preferences'),
+      });
+      const albumDeser = SqlDeserializer.fromRecord({
+        id: named.toInteger.orNull().forColumn('album_id'),
+        name: named.toString.orNull().forColumn('album_name'),
+        releaseDate: named.toDate.orNull().forColumn('release_date'),
+      }).map(({ id, name, releaseDate }) => (id && name && releaseDate ? { id, name, releaseDate } : null));
+
+      const bandAndAlbumDeser = SqlDeserializer.fromRecord({
+        band: bandDeser,
+        album: albumDeser,
       });
 
       function findBandWithAlbums(filters: Array<BandFilter> = []): Promise<Array<BandWithAlbums>> {
@@ -123,19 +130,16 @@ describe('bands integration test', () => {
             ${clauses}`;
 
         return sqlQuery.list(bandAndAlbumDeser).then((arr) => {
-          const grouped = arr.reduce<{ [bandId: string]: BandWithAlbums }>(
-            (acc, { bandId, albumId, albumName, preferences, releaseDate, name }) => {
-              const album = albumId && albumName && releaseDate ? { id: albumId, name: albumName, releaseDate } : null;
-              if (!acc[bandId]) {
-                acc[bandId] = { band: { id: bandId, name, preferences }, albums: album ? [album] : [] };
-              } else if (album) {
-                acc[bandId].albums = [...acc[bandId].albums, album];
-              }
+          const grouped = arr.reduce<{ [bandId: string]: BandWithAlbums }>((acc, { band, album }) => {
+            const bandId = band.id;
+            if (!acc[bandId]) {
+              acc[bandId] = { band, albums: album ? [album] : [] };
+            } else if (album) {
+              acc[bandId].albums = [...acc[bandId].albums, album];
+            }
 
-              return acc;
-            },
-            {}
-          );
+            return acc;
+          }, {});
 
           return Object.values(grouped).sort(({ band: band1 }, { band: band2 }) =>
             band1.name.localeCompare(band2.name)
