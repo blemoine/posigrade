@@ -48,7 +48,7 @@ describe('bands integration test', () => {
       function insertBand(name: string, preferences: object | null): Promise<number> {
         const preferencesValue = preferences ? JSON.stringify(preferences) : null;
         return Sql`INSERT INTO bands(name, preferences) VALUES(${name}, ${preferencesValue}) RETURNING id`
-          .unique(named.toInteger('id'))
+          .unique(named.toInteger.forColumn('id'))
           .then((r) => {
             if (!r) {
               throw new Error(`Insert ${name} must return something`);
@@ -60,7 +60,7 @@ describe('bands integration test', () => {
 
       function insertAlbum(name: string, releaseDate: Date): Promise<number> {
         return Sql`INSERT INTO albums(name, release_date) VALUES (${name}, ${releaseDate.toISOString()}) RETURNING id`
-          .unique(named.toInteger('id'))
+          .unique(named.toInteger.forColumn('id'))
           .then((r) => {
             if (!r) {
               throw new Error(`Insert ${name} must return something`);
@@ -96,12 +96,12 @@ describe('bands integration test', () => {
       }
 
       const bandAndAlbumDeser = SqlDeserializer.fromRecord({
-        bandId: named.toInteger('id'),
-        name: named.toString('name'),
-        albumId: named.toInteger('album_id').or(named.toNull('album_id')), // TODO on peuyt faire mieux que ca
-        albumName: named.toString('album_name').or(named.toNull('album_name')),
-        releaseDate: named.toDate('release_date').or(named.toNull('release_date')),
-        preferences: named.toJsonObject('preferences').or(named.toNull('preferences')),
+        bandId: named.toInteger.forColumn('id'),
+        name: named.toString.forColumn('name'),
+        albumId: named.toInteger.or(named.toNull).forColumn('album_id'),
+        albumName: named.toString.or(named.toNull).forColumn('album_name'),
+        releaseDate: named.toDate.or(named.toNull).forColumn('release_date'),
+        preferences: named.toJsonObject.or(named.toNull).forColumn('preferences'),
       });
 
       function findBandWithAlbums(filters: Array<BandFilter> = []): Promise<Array<BandWithAlbums>> {

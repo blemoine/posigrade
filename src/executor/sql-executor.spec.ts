@@ -20,7 +20,9 @@ describe('SqlExecutor', () => {
         await Sql`INSERT INTO cookies(name) VALUES ('pocky')`.update();
       });
 
-      const result = await SqlExecutor(pool).run((Sql) => Sql`SELECT name FROM cookies`.list(named.toString('name')));
+      const result = await SqlExecutor(pool).run((Sql) =>
+        Sql`SELECT name FROM cookies`.list(named.toString.forColumn('name'))
+      );
 
       expect(result).toStrictEqual(['pocky']);
     });
@@ -36,7 +38,7 @@ describe('SqlExecutor', () => {
       expect(failedResult).toStrictEqual(new Error('Expected error'));
 
       const result = await SqlExecutor(pool)
-        .run((Sql) => Sql`SELECT name FROM brownies`.list(named.toString('chocolate')))
+        .run((Sql) => Sql`SELECT name FROM brownies`.list(named.toString.forColumn('name')))
         .catch((e) => e);
 
       expect(result.message).toStrictEqual(`relation "brownies" does not exist`);
