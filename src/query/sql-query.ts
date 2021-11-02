@@ -6,10 +6,11 @@ import { NonEmptyArray } from '../utils/non-empty-array';
 export type BaseSupportedValueType = string | number | boolean | Date | null;
 export type SupportedValueType = BaseSupportedValueType | Array<BaseSupportedValueType>;
 
+export type QueryableClient = { query: ClientBase['query'] };
 export class SqlQuery {
   public readonly queryText: string;
   constructor(
-    private readonly client: ClientBase,
+    private readonly client: QueryableClient,
     public readonly strings: NonEmptyArray<string>,
     public readonly values: SupportedValueType[]
   ) {

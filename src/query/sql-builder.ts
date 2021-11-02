@@ -1,20 +1,19 @@
-import { ClientBase } from 'pg';
-import { SqlQuery, SupportedValueType } from './sql-query';
+import { QueryableClient, SqlQuery, SupportedValueType } from './sql-query';
 import { addInArray, NonEmptyArray } from '../utils/non-empty-array';
-import { cannotHappen } from '../utils/cannotHappen';
 
 type AdvancedSupportedValueType = SupportedValueType | SqlQuery | SqlConstant;
 
 class SqlConstant {
-  private sqlConstant: 'sqlConstant' = 'sqlConstant';
-  constructor(public str: string) {}
+  private _sqlConstant: 'sqlConstant' = 'sqlConstant';
+  constructor(public constantString: string) {}
 }
 
 export function SqlConst(str: string): SqlConstant {
   return new SqlConstant(str);
 }
 
-export function SqlBuilder(client: ClientBase) {
+export type SqlTemplateString = ReturnType<typeof SqlBuilder>;
+export function SqlBuilder(client: QueryableClient) {
   return <T extends AdvancedSupportedValueType[]>(strings: ReadonlyArray<string>, ...values: T): SqlQuery => {
     const flattenedValues = values.flatMap<SupportedValueType>((v) => {
       if (v instanceof SqlQuery) {
@@ -29,7 +28,7 @@ export function SqlBuilder(client: ClientBase) {
     const flattenedStr = values
       .map((q) => {
         if (q instanceof SqlConstant) {
-          return new SqlQuery(client, [q.str], []);
+          return new SqlQuery(client, [q.constantString], []);
         } else {
           return q;
         }
