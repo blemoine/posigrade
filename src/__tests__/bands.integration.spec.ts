@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import { SqlBuilder, SqlConst } from '../query/sql-builder';
+import { SqlConst } from '../query/sql-builder';
 import { named } from '../deserializer/deserializers';
 import { cannotHappen } from '../utils/cannotHappen';
 import { SqlDeserializer } from '../deserializer/SqlDeserializer';
