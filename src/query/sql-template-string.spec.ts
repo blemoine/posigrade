@@ -1,4 +1,4 @@
-import { Sql, SqlConst } from './sql-builder';
+import { Sql, SqlConst } from './sql-template-string';
 
 describe('SqlBuilder', () => {
   it('should build a simple query', () => {

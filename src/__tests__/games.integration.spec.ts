@@ -1,9 +1,9 @@
 import { Pool } from 'pg';
 import { SqlExecutor } from '../executor/sql-executor';
-import { Sql } from '../query/sql-builder';
 import { InferDeserializerType, SqlDeserializer } from '../deserializer/SqlDeserializer';
 import { named } from '../deserializer/deserializers';
 import { ExecutableQuery } from '../query/executable-query';
+import { Sql } from '../query/sql-template-string';
 
 const gameDeserializer = SqlDeserializer.fromRecord({
   id: named.toInteger,

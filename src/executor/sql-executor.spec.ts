@@ -1,7 +1,7 @@
 import { SqlExecutor } from './sql-executor';
 import { Pool } from 'pg';
 import { named } from '../deserializer/deserializers';
-import { Sql } from '../query/sql-builder';
+import { Sql } from '../query/sql-template-string';
 
 describe('SqlExecutor', () => {
   let pool: Pool;

@@ -1,4 +1,4 @@
-import { ClientBase, QueryConfig } from 'pg';
+import { QueryConfig } from 'pg';
 import { SqlDeserializer } from '../deserializer/SqlDeserializer';
 import { sequenceResult } from '../result/Result';
 import { NonEmptyArray } from '../utils/non-empty-array';
