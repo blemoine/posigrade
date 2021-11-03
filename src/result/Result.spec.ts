@@ -93,7 +93,7 @@ describe('Result', () => {
     it('should respect right identity', () => {
       fc.assert(
         fc.property(arbResult, (result) => {
-          expect(result.flatMap((x) => Success.of(x))).toStrictEqual(result);
+          expect(result.chain((x) => Success.of(x))).toStrictEqual(result);
         })
       );
     });
@@ -101,7 +101,7 @@ describe('Result', () => {
     it('should respect left identity', () => {
       fc.assert(
         fc.property(fc.anything(), fc.func(arbResult), (a, fn) => {
-          expect(Success.of(a).flatMap(fn)).toStrictEqual(fn(a));
+          expect(Success.of(a).chain(fn)).toStrictEqual(fn(a));
         })
       );
     });
@@ -109,7 +109,7 @@ describe('Result', () => {
     it('should respect composition', () => {
       fc.assert(
         fc.property(arbResult, fc.func(arbResult), fc.func(arbResult), (result, fn, fn2) => {
-          expect(result.flatMap(fn).flatMap(fn2)).toStrictEqual(result.flatMap((x) => fn(x).flatMap(fn2)));
+          expect(result.chain(fn).chain(fn2)).toStrictEqual(result.chain((x) => fn(x).chain(fn2)));
         })
       );
     });

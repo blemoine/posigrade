@@ -29,7 +29,7 @@ export class SqlDeserializer<T> {
 
   transform<B>(mapper: (t: T) => Result<B>): SqlDeserializer<B> {
     return new SqlDeserializer((row) => {
-      return this.deserialize(row).flatMap(mapper);
+      return this.deserialize(row).chain(mapper);
     });
   }
 
