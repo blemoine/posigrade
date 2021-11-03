@@ -1,0 +1,14 @@
+node_modules
+.idea
+*.iml
+coverage
+.github
+*.spec.ts
+*.spec.js
+*.spec.d.ts
+.eslintrc.js
+.eslintignore
+.prettierc
+tsconfig.json
+jest.config.js
+test

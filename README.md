@@ -12,7 +12,15 @@ Posigrade goal
 
 
 
+Release procedure
+---
 
+```
+git checkout master
+git reset --hard HEAD
+npm run release
+npm publish
+```
 
 
 
