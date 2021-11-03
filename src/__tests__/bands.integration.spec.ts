@@ -4,7 +4,7 @@ import { named } from '../deserializer/deserializers';
 import { cannotHappen } from '../utils/cannotHappen';
 import { SqlDeserializer } from '../deserializer/SqlDeserializer';
 import { SqlExecutor } from '../executor/sql-executor';
-import { QueryableClient } from '../query/sql-query';
+import { QueryableClient } from '../query/executable-query';
 
 type Band = {
   id: number;

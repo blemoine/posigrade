@@ -1,4 +1,4 @@
-import { QueryableClient, SqlQuery, SupportedValueType } from './sql-query';
+import { SqlQuery, SupportedValueType } from './sql-query';
 import { addInArray, NonEmptyArray } from '../utils/non-empty-array';
 
 type AdvancedSupportedValueType = SupportedValueType | SqlQuery | SqlConstant;

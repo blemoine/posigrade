@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import { ExecutableQuery, QueryableClient } from '../query/sql-query';
+import { ExecutableQuery, QueryableClient } from '../query/executable-query';
 
 export type SqlExecutor = ReturnType<typeof SqlExecutor>;
 export const SqlExecutor = (pool: Pool) => ({
