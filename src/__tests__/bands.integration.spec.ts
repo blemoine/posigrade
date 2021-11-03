@@ -154,7 +154,7 @@ describe('bands integration test', () => {
     pool.end();
   });
 
-  it('should support initialization and queries', async () => {
+  it('should support initialization and queries without leaking abstraction', async () => {
     const sqlExecutor = SqlExecutor(pool);
     await sqlExecutor.run(
       Sql`CREATE TABLE bands(id SERIAL PRIMARY KEY, name TEXT NOT NULL, preferences JSONB)`.update()

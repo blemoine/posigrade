@@ -1,14 +1,19 @@
 import { Result, sequenceResult } from '../result/Result';
+import { NamedDeserializer } from './DeserDefinition';
 
 export type RowObject = { [p: string]: unknown };
 
+export type InferDeserializerType<T> = T extends SqlDeserializer<infer U> ? U : never;
 export class SqlDeserializer<T> {
   static fromRecord<O extends Record<string, unknown>>(records: {
-    [name in keyof O]: SqlDeserializer<O[name]>;
+    [name in keyof O]: SqlDeserializer<O[name]> | NamedDeserializer<O[name]>;
   }): SqlDeserializer<O> {
     return new SqlDeserializer<O>((row) => {
-      const results = Object.entries(records).map(([name, deser]: [string, SqlDeserializer<unknown>]) =>
-        deser.deserialize(row).map((v) => [name, v] as const)
+      const results = Object.entries(records).map(
+        ([name, rawDeser]: [string, SqlDeserializer<unknown> | NamedDeserializer<unknown>]) => {
+          const deser = rawDeser instanceof NamedDeserializer ? rawDeser.forColumn(name) : rawDeser;
+          return deser.deserialize(row).map((v) => [name, v] as const);
+        }
       );
       const result = sequenceResult(results);
 
