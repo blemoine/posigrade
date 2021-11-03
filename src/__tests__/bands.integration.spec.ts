@@ -4,7 +4,7 @@ import { named } from '../deserializer/deserializers';
 import { cannotHappen } from '../utils/cannotHappen';
 import { SqlDeserializer } from '../deserializer/SqlDeserializer';
 import { SqlExecutor } from '../executor/sql-executor';
-import { ExecutableQuery } from '../query/sql-query';
+import { QueryableClient } from '../query/sql-query';
 
 type Band = {
   id: number;
@@ -46,17 +46,21 @@ const bandAndAlbumDeser = SqlDeserializer.fromRecord({
 });
 
 class BandRepo {
-  insertBand(name: string, preferences: object | null): ExecutableQuery<number> {
+  constructor(private clientGen: QueryableClient) {}
+
+  insertBand(name: string, preferences: object | null): Promise<number> {
     const preferencesValue = preferences ? JSON.stringify(preferences) : null;
-    return Sql`INSERT INTO bands(name, preferences) VALUES(${name}, ${preferencesValue}) RETURNING id`.unique(
-      named.toInteger.forColumn('id')
-    );
+    return Sql`INSERT INTO bands(name, preferences) VALUES(${name}, ${preferencesValue}) RETURNING id`
+      .unique(named.toInteger.forColumn('id'))
+      .run(this.clientGen);
   }
-  linkBandToAlbum(bandId: number, albumId: number): ExecutableQuery<void> {
-    return Sql`INSERT INTO bands_albums(band_id, album_id) VALUES  (${bandId}, ${albumId})`.update();
+  linkBandToAlbum(bandId: number, albumId: number): Promise<void> {
+    return Sql`INSERT INTO bands_albums(band_id, album_id) VALUES  (${bandId}, ${albumId})`
+      .update()
+      .run(this.clientGen);
   }
 
-  findBandWithAlbums(filters: Array<BandFilter> = []): ExecutableQuery<Array<BandWithAlbums>> {
+  findBandWithAlbums(filters: Array<BandFilter> = []): Promise<Array<BandWithAlbums>> {
     const clauses =
       filters.length > 0
         ? filters
@@ -74,43 +78,53 @@ class BandRepo {
             LEFT JOIN albums a ON a.id = ba.album_id
             ${clauses}`;
 
-    return sqlQuery.list(bandAndAlbumDeser).map((arr) => {
-      const grouped = arr.reduce<{ [bandId: string]: BandWithAlbums }>((acc, { band, album }) => {
-        const bandId = band.id;
-        if (!acc[bandId]) {
-          acc[bandId] = { band, albums: album ? [album] : [] };
-        } else if (album) {
-          acc[bandId].albums = [...acc[bandId].albums, album];
-        }
+    return sqlQuery
+      .list(bandAndAlbumDeser)
+      .map((arr) => {
+        const grouped = arr.reduce<{ [bandId: string]: BandWithAlbums }>((acc, { band, album }) => {
+          const bandId = band.id;
+          if (!acc[bandId]) {
+            acc[bandId] = { band, albums: album ? [album] : [] };
+          } else if (album) {
+            acc[bandId].albums = [...acc[bandId].albums, album];
+          }
 
-        return acc;
-      }, {});
+          return acc;
+        }, {});
 
-      return Object.values(grouped).sort(({ band: band1 }, { band: band2 }) => band1.name.localeCompare(band2.name));
-    });
+        return Object.values(grouped).sort(({ band: band1 }, { band: band2 }) => band1.name.localeCompare(band2.name));
+      })
+      .run(this.clientGen);
   }
 }
 
 class AlbumRepo {
-  insertAlbum(name: string, releaseDate: Date): ExecutableQuery<number> {
-    return Sql`INSERT INTO albums(name, release_date) VALUES (${name}, ${releaseDate.toISOString()}) RETURNING id`.unique(
-      named.toInteger.forColumn('id')
-    );
+  constructor(private clientGen: QueryableClient) {}
+
+  insertAlbum(name: string, releaseDate: Date): Promise<number> {
+    return Sql`INSERT INTO albums(name, release_date) VALUES (${name}, ${releaseDate.toISOString()}) RETURNING id`
+      .unique(named.toInteger.forColumn('id'))
+      .run(this.clientGen);
   }
 }
 
 class BandService {
-  constructor(private sqlExecutor: SqlExecutor, private bandRepo: BandRepo, private albumRepo: AlbumRepo) {}
+  constructor(
+    private sqlExecutor: SqlExecutor,
+    private bandRepo: (client: QueryableClient) => BandRepo,
+    private albumRepo: (client: QueryableClient) => AlbumRepo
+  ) {}
   async createBandWithAlbums(
     createModel: BandWithAlbumsCreate
   ): Promise<{ bandId: number; albumIds: ReadonlyArray<number> }> {
     return this.sqlExecutor.transact(async (client) => {
-      const bandId = await this.bandRepo.insertBand(createModel.name, createModel.preferences).run(client);
-      const albumIds = await Promise.all(
-        createModel.albums.map((a) => this.albumRepo.insertAlbum(a.name, a.releaseDate).run(client))
-      );
+      const bandRepo = this.bandRepo(client);
+      const albumRepo = this.albumRepo(client);
 
-      await Promise.all(albumIds.map((albumId) => this.bandRepo.linkBandToAlbum(bandId, albumId).run(client)));
+      const bandId = await bandRepo.insertBand(createModel.name, createModel.preferences);
+      const albumIds = await Promise.all(createModel.albums.map((a) => albumRepo.insertAlbum(a.name, a.releaseDate)));
+
+      await Promise.all(albumIds.map((albumId) => bandRepo.linkBandToAlbum(bandId, albumId)));
 
       return { bandId, albumIds };
     });
@@ -118,7 +132,7 @@ class BandService {
 
   findBandWithAlbumsById(id: number): Promise<BandWithAlbums | null> {
     return this.sqlExecutor
-      .run(this.bandRepo.findBandWithAlbums([{ operator: 'eq', field: 'id', value: id }]))
+      .run((client) => this.bandRepo(client).findBandWithAlbums([{ operator: 'eq', field: 'id', value: id }]))
       .then((allBandWithAlbum) => {
         if (allBandWithAlbum.length === 1 || allBandWithAlbum.length === 0) {
           return allBandWithAlbum[0] || null;
@@ -152,9 +166,11 @@ describe('bands integration test', () => {
       Sql`CREATE TABLE bands_albums(band_id INTEGER REFERENCES bands(id) NOT NULL, album_id INTEGER REFERENCES albums(id) NOT NULL)`.update()
     );
 
-    const bandRepo = new BandRepo();
-    const albumRepo = new AlbumRepo();
-    const bandService = new BandService(sqlExecutor, bandRepo, albumRepo);
+    const bandService = new BandService(
+      sqlExecutor,
+      (client) => new BandRepo(client),
+      (client) => new AlbumRepo(client)
+    );
 
     const kalisiaAfterCreation = await bandService.createBandWithAlbums({
       name: 'Kalisia',
@@ -191,7 +207,7 @@ describe('bands integration test', () => {
     const queryResult2 = await bandService.findBandWithAlbumsById(2);
     expect(queryResult2).toStrictEqual(alcest);
 
-    const queryAllResults = await sqlExecutor.run(bandRepo.findBandWithAlbums());
+    const queryAllResults = await sqlExecutor.run((client) => new BandRepo(client).findBandWithAlbums());
 
     expect(queryAllResults).toStrictEqual([alcest, kalisia]);
   });
