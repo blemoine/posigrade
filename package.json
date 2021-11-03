@@ -11,7 +11,8 @@
     "lint": "eslint './src/**/*.ts'",
     "test": "jest",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run build"
+    "prepare": "npm run build",
+    "release": "npx standard-version && git push --follow-tags origin master"
   },
   "keywords": [
     "postgres",
