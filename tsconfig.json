@@ -11,7 +11,7 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "esModuleInterop": true,
-    "lib": ["esnext"]
+    "lib": ["es2019"]
   },
-  "exclude": ["example", "node_modules", "dist", "coverage", "test"]
+  "exclude": ["node_modules", "dist", "coverage", "test"]
 }
