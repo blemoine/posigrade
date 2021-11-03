@@ -1,14 +1,15 @@
 import { Pool } from 'pg';
-import { SqlBuilder, SqlTemplateString } from '../query/sql-builder';
+import { ExecutableQuery, QueryableClient } from '../query/sql-query';
 
+export type SqlExecutor = ReturnType<typeof SqlExecutor>;
 export const SqlExecutor = (pool: Pool) => ({
-  async transact<T>(fn: (Sql: SqlTemplateString) => Promise<T>): Promise<T> {
+  async transact<T>(fn: ExecutableQuery<T> | ((client: QueryableClient) => Promise<T>)): Promise<T> {
     const client = await pool.connect();
 
     try {
       await client.query('BEGIN');
 
-      const result = await fn(SqlBuilder(client));
+      const result = await (fn instanceof ExecutableQuery ? fn.run(client) : fn(client));
 
       await client.query('COMMIT');
 
@@ -22,10 +23,10 @@ export const SqlExecutor = (pool: Pool) => ({
     }
   },
 
-  async run<T>(fn: (Sql: SqlTemplateString) => Promise<T>): Promise<T> {
+  async run<T>(fn: ExecutableQuery<T> | ((client: QueryableClient) => Promise<T>)): Promise<T> {
     const client = await pool.connect();
     try {
-      const result = await fn(SqlBuilder(client));
+      const result = await (fn instanceof ExecutableQuery ? fn.run(client) : fn(client));
       return result;
     } finally {
       client.release();
