@@ -1,6 +1,6 @@
 import { SqlExecutor } from './sql-executor';
 import { Pool } from 'pg';
-import { named } from '../deserializer/deserializers';
+import { deser } from '../deserializer/deserializers';
 import { Sql } from '../query/sql-template-string';
 
 describe('SqlExecutor', () => {
@@ -22,7 +22,7 @@ describe('SqlExecutor', () => {
         await Sql`INSERT INTO cookies(name) VALUES ('pocky')`.update().run(client);
       });
 
-      const result = await sqlExecutor.run(Sql`SELECT name FROM cookies`.list(named.toString.forColumn('name')));
+      const result = await sqlExecutor.run(Sql`SELECT name FROM cookies`.list(deser.toString.forColumn('name')));
 
       expect(result).toStrictEqual(['pocky']);
     });
@@ -39,7 +39,7 @@ describe('SqlExecutor', () => {
       expect(failedResult).toStrictEqual(new Error('Expected error'));
 
       const result = await sqlExecutor
-        .run(Sql`SELECT name FROM brownies`.list(named.toString.forColumn('name')))
+        .run(Sql`SELECT name FROM brownies`.list(deser.toString.forColumn('name')))
         .catch((e) => e);
 
       expect(result.message).toStrictEqual(`relation "brownies" does not exist`);

@@ -1,6 +1,33 @@
 import { SqlDeserializer } from './SqlDeserializer';
 import { Failure, Success } from '../result/Result';
 
+/**
+ * Conceptually, a NamedDeserializer<T> is function
+ * taking a column name as input a returning an SqlDeserializer<T> for this column.
+ * It's useful because most of the time `SqlDeserializer`s are reusable for different columns,
+ * but sharing a common type.
+ *
+ * Technically, a `NamedDeserializer<T>` is a wrapper around `(col: string) => SqlDeserializer<T>`
+ *
+ * Most of the time, we don't need to build one manually, and we can use `toNamedDeserializer` function instead
+ * if we need to build one
+ *
+ * @example
+ *
+ * ```
+ * const postiveNumber: DeserDefinition<number> =  {
+ *     guard: (x:unknown): x is number => typeof x === 'number' && x > 0,
+ *     errorMessage: (x: unknwon) => `${x} should be a positive number`
+ * }
+ * const positiveNumberDeserializer = toNamedDeserializer(positiveNumber);
+ *
+ *
+ * // we can now use positiveNumberDeserializer for different column
+ * positiveNumberDeserializer('price'); // SqlDeserializer for price column
+ * positiveNumberDeserializer('tax'); // SqlDeserializer for tax column
+ *
+ * ```
+ */
 export class NamedDeserializer<T> {
   constructor(public forColumn: (col: string) => SqlDeserializer<T>) {}
 

@@ -1,24 +1,24 @@
 import { Pool } from 'pg';
 import { SqlExecutor } from '../executor/sql-executor';
 import { InferDeserializerType, SqlDeserializer } from '../deserializer/SqlDeserializer';
-import { named } from '../deserializer/deserializers';
+import { deser } from '../deserializer/deserializers';
 import { ExecutableQuery } from '../query/executable-query';
 import { Sql } from '../query/sql-template-string';
 
 const gameDeserializer = SqlDeserializer.fromRecord({
-  id: named.toInteger,
-  name: named.toString,
+  id: deser.toInteger,
+  name: deser.toString,
 });
 type Game = InferDeserializerType<typeof gameDeserializer>;
 
 const gameAndReviewRowDeser = SqlDeserializer.fromRecord({
-  id: named.toInteger,
-  name: named.toString,
+  id: deser.toInteger,
+  name: deser.toString,
   review: SqlDeserializer.fromRecord({
-    id: named.toInteger.orNull().forColumn('review_id'),
-    stars: named.toInteger.orNull(),
-    comment: named.toString.orNull(),
-    creationDate: named.toDate.orNull().forColumn('creation_date'),
+    id: deser.toInteger.orNull().forColumn('review_id'),
+    stars: deser.toInteger.orNull(),
+    comment: deser.toString.orNull(),
+    creationDate: deser.toDate.orNull().forColumn('creation_date'),
   }).map(({ id, stars, comment, creationDate }) =>
     id && stars && creationDate ? { id, stars, comment, creationDate } : null
   ),
@@ -67,11 +67,11 @@ interface ReviewCreateInput {
   creationDate: Date | null;
 }
 const reviewDeserializer = SqlDeserializer.fromRecord({
-  id: named.toInteger,
-  stars: named.toInteger,
-  comment: named.toString.orNull(),
-  creationDate: named.toDate.forColumn('creation_date'),
-  gameId: named.toInteger.forColumn('game_id'),
+  id: deser.toInteger,
+  stars: deser.toInteger,
+  comment: deser.toString.orNull(),
+  creationDate: deser.toDate.forColumn('creation_date'),
+  gameId: deser.toInteger.forColumn('game_id'),
 });
 
 type Review = InferDeserializerType<typeof reviewDeserializer>;

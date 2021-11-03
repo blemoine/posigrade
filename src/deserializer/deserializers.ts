@@ -22,7 +22,7 @@ const toJsonObjectDef: DeserDefinition<object> = {
   errorMessage: (value) => `'${value}' is not an object`,
 };
 
-export const named = {
+export const deser = {
   toNumber: toNamedDeserializer(toNumberDef),
   toString: toNamedDeserializer(toStringDef),
   toInteger: toNamedDeserializer(toIntegerDef),

@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
 import { Sql, SqlConst } from '../query/sql-template-string';
-import { named } from '../deserializer/deserializers';
+import { deser } from '../deserializer/deserializers';
 import { cannotHappen } from '../utils/cannotHappen';
 import { SqlDeserializer } from '../deserializer/SqlDeserializer';
 import { SqlExecutor } from '../executor/sql-executor';
@@ -30,14 +30,14 @@ type BandWithAlbumsCreate = {
 type BandFilter = { field: 'id'; operator: 'eq'; value: number };
 
 const bandDeser = SqlDeserializer.fromRecord<Band>({
-  id: named.toInteger.forColumn('id'),
-  name: named.toString.forColumn('name'),
-  preferences: named.toJsonObject.orNull().forColumn('preferences'),
+  id: deser.toInteger.forColumn('id'),
+  name: deser.toString.forColumn('name'),
+  preferences: deser.toJsonObject.orNull().forColumn('preferences'),
 });
 const albumDeser = SqlDeserializer.fromRecord({
-  id: named.toInteger.orNull().forColumn('album_id'),
-  name: named.toString.orNull().forColumn('album_name'),
-  releaseDate: named.toDate.orNull().forColumn('release_date'),
+  id: deser.toInteger.orNull().forColumn('album_id'),
+  name: deser.toString.orNull().forColumn('album_name'),
+  releaseDate: deser.toDate.orNull().forColumn('release_date'),
 }).map(({ id, name, releaseDate }) => (id && name && releaseDate ? { id, name, releaseDate } : null));
 
 const bandAndAlbumDeser = SqlDeserializer.fromRecord({
@@ -51,7 +51,7 @@ class BandRepo {
   insertBand(name: string, preferences: object | null): Promise<number> {
     const preferencesValue = preferences ? JSON.stringify(preferences) : null;
     return Sql`INSERT INTO bands(name, preferences) VALUES(${name}, ${preferencesValue}) RETURNING id`
-      .unique(named.toInteger.forColumn('id'))
+      .unique(deser.toInteger.forColumn('id'))
       .run(this.clientGen);
   }
   linkBandToAlbum(bandId: number, albumId: number): Promise<void> {
@@ -103,7 +103,7 @@ class AlbumRepo {
 
   insertAlbum(name: string, releaseDate: Date): Promise<number> {
     return Sql`INSERT INTO albums(name, release_date) VALUES (${name}, ${releaseDate.toISOString()}) RETURNING id`
-      .unique(named.toInteger.forColumn('id'))
+      .unique(deser.toInteger.forColumn('id'))
       .run(this.clientGen);
   }
 }

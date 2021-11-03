@@ -60,4 +60,10 @@ export function sequenceResult<A>(arr: Array<Result<A>>): Result<Array<A>> {
   }, Success.of([]));
 }
 
+/**
+ * A type representing something succcessful or failed.
+ *
+ * The goal is to have a way to accumulate multiple error messages
+ * instead of failing at the first error encountered
+ */
 export type Result<T> = Success<T> | Failure<T>;
