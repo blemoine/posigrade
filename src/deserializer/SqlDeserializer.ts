@@ -3,6 +3,34 @@ import { NamedDeserializer } from './DeserDefinition';
 
 export type RowObject = { [p: string]: unknown };
 
+/**
+ * This type is used to infer the type defined by a serializer.
+ *
+ * @example
+ *
+ * You can either:
+ * define your domain type yourself, and create a deserializer for it, but you will have some duplication:
+ *
+ * ```
+ * type User = {id:number, name:string};
+ * const userDeserializer = SqlDeserializer.fromRecord<User>({
+ *   id: deser.toInteger,
+ *   name: deser.toString,
+ * })
+ * ```
+ *
+ * or you can define the deserializer an infer from the type from there:
+ *
+ * ```
+ * const userDeserializer = SqlDeserializer.fromRecord({
+ *   id: deser.toInteger,
+ *   name: deser.toString,
+ * })
+ *
+ * type User = InferDeserializerType<typeof userDeserializer>;
+ * // will hold {id:number, name:string}
+ * ```
+ */
 export type InferDeserializerType<T> = T extends SqlDeserializer<infer U> ? U : never;
 
 /**

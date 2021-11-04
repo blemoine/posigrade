@@ -26,6 +26,25 @@ export class Success<T> {
     return result.map((b) => [this.value, b]);
   }
 }
+
+/**
+ * A class representing one or multiple errors.
+ * When used something merging multiple `Result`s (like `zip` or `sequenceResult`), it will accumulate the errors.
+ *
+ * Most of the time, you'll want to use the `raise` static function to create a Failure with on error message.
+ *
+ * @example
+ *
+ * ```
+ * const failure1 = Failure.raise('this is an error');
+ * const failure2 = Failure.raise('another error');
+ *
+ * const failure = failure1.zip(failure2);
+ *
+ * failure.getOrThrow() // will `throw new Error('this is an error, another error')`
+ * ```
+ *
+ */
 export class Failure<T> {
   static raise<T>(message: string): Failure<T> {
     return new Failure<T>([message]);

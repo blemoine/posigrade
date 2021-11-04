@@ -30,7 +30,9 @@ import { Failure, Success } from '../result/Result';
  */
 export class NamedDeserializer<T> {
   constructor(public forColumn: (col: string) => SqlDeserializer<T>) {}
-
+  map<U>(fn: (t: T) => U): NamedDeserializer<U> {
+    return new NamedDeserializer<U>((col) => this.forColumn(col).map(fn));
+  }
   or<U>(other: NamedDeserializer<U>): NamedDeserializer<T | U> {
     return new NamedDeserializer<T | U>((col) => this.forColumn(col).or(other.forColumn(col)));
   }
