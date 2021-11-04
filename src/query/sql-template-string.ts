@@ -46,8 +46,8 @@ export function SqlConst(str: string): SqlConstant {
  * If you need to use a variable _without_ transforming it to named parameter, look at `SqlConst`
  * (for example, to build dynamic queries)
  *
- * @param strings
- * @param values
+ * @param strings - strings parts of the template string
+ * @param values - values part of the template string
  *
  *
  * @example
@@ -58,7 +58,7 @@ export function SqlConst(str: string): SqlConstant {
  *
  * ```
  */
-export function Sql<T extends AdvancedSupportedValueType[]>(strings: ReadonlyArray<string>, ...values: T): SqlQuery {
+export function Sql(strings: ReadonlyArray<string>, ...values: AdvancedSupportedValueType[]): SqlQuery {
   const flattenedValues = values.flatMap<SupportedValueType>((v) => {
     if (v instanceof SqlQuery) {
       return v.values;

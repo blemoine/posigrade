@@ -6,7 +6,7 @@ module.exports = {
     'eslint:recommended',
     'plugin:@typescript-eslint/eslint-recommended',
   ],
-  plugins: ['@typescript-eslint', 'prettier'],
+  plugins: ['@typescript-eslint', 'prettier', 'eslint-plugin-tsdoc'],
   env: {
     jasmine: true,
     jest: true,
@@ -20,5 +20,6 @@ module.exports = {
     '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/no-empty-function': 'off',
     'no-unused-vars': 'off',
+    'tsdoc/syntax': 'error',
   },
 };
