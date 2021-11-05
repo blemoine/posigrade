@@ -1,5 +1,5 @@
 import { SqlDeserializer } from './SqlDeserializer';
-import { Failure, Success } from '../result/Result';
+import { Failure, Result, Success } from '../result/Result';
 
 /**
  * Conceptually, a NamedDeserializer<T> is function
@@ -32,6 +32,11 @@ export class NamedDeserializer<T> {
   constructor(public forColumn: (col: string) => SqlDeserializer<T>) {}
   map<U>(fn: (t: T) => U): NamedDeserializer<U> {
     return new NamedDeserializer<U>((col) => this.forColumn(col).map(fn));
+  }
+  transform<B>(mapper: (t: T) => Result<B>): NamedDeserializer<B> {
+    return new NamedDeserializer((col) => {
+      return this.forColumn(col).transform(mapper);
+    });
   }
   or<U>(other: NamedDeserializer<U>): NamedDeserializer<T | U> {
     return new NamedDeserializer<T | U>((col) => this.forColumn(col).or(other.forColumn(col)));

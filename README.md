@@ -282,7 +282,7 @@ Our model will be the same in the 2 cases
 
 ```
 // user.model.ts
-interface User {
+type User = {
     id: number,
     name: string
 }
