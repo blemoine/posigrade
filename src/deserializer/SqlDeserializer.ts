@@ -65,16 +65,15 @@ export class SqlDeserializer<T> {
    * })
    * ```
    */
-  static fromRecord<O extends Record<string, unknown>>(records: {
+  static fromRecord<O extends object>(records: {
     [name in keyof O]: SqlDeserializer<O[name]> | NamedDeserializer<O[name]>;
   }): SqlDeserializer<O> {
     return new SqlDeserializer<O>((row) => {
-      const results = Object.entries(records).map(
-        ([name, rawDeser]: [string, SqlDeserializer<unknown> | NamedDeserializer<unknown>]) => {
-          const deser = rawDeser instanceof NamedDeserializer ? rawDeser.forColumn(name) : rawDeser;
-          return deser.deserialize(row).map((v) => [name, v] as const);
-        }
-      );
+      const entries = Object.entries(records) as [string, SqlDeserializer<unknown> | NamedDeserializer<unknown>][];
+      const results = entries.map(([name, rawDeser]) => {
+        const deser = rawDeser instanceof NamedDeserializer ? rawDeser.forColumn(name) : rawDeser;
+        return deser.deserialize(row).map((v) => [name, v] as const);
+      });
       const result = sequenceResult(results);
 
       return result.map(Object.fromEntries);

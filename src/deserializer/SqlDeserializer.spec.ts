@@ -9,6 +9,7 @@ describe('SqlDeserializer', () => {
       return Success.of(0);
     }
   });
+  const nameDeserializer = new SqlDeserializer((row) => Success.of(`${row.name}`));
   describe('map', () => {
     it('should transform the result of the serializer', () => {
       const result = idDeserializer.map((x) => x + 1);
@@ -31,10 +32,19 @@ describe('SqlDeserializer', () => {
 
   describe('fromRecord', () => {
     it('should build a record deserializer', () => {
-      const nameDeserializer = new SqlDeserializer((row) => Success.of(`${row.name}`));
       const deser = SqlDeserializer.fromRecord({ myId: idDeserializer, myName: nameDeserializer });
 
       expect(deser.deserialize({ id: 5, name: 'Georges' })).toStrictEqual(Success.of({ myId: 5, myName: 'Georges' }));
+    });
+    it('should work an explicitly defined interface', () => {
+      interface User {
+        id: number;
+        name: string;
+      }
+
+      const deser = SqlDeserializer.fromRecord<User>({ id: idDeserializer, name: nameDeserializer });
+
+      expect(deser.deserialize({ id: 5, name: 'Georges' })).toStrictEqual(Success.of({ id: 5, name: 'Georges' }));
     });
   });
 });
