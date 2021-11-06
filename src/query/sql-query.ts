@@ -1,5 +1,5 @@
-import { QueryConfig } from 'pg';
-import { SqlDeserializer } from '../deserializer/SqlDeserializer';
+import { QueryConfig, QueryResult } from 'pg';
+import { RowObject, SqlDeserializer } from '../deserializer/SqlDeserializer';
 import { sequenceResult } from '../result/Result';
 import { NonEmptyArray } from '../utils/non-empty-array';
 import { ExecutableQuery } from './executable-query';
@@ -52,11 +52,19 @@ export class SqlQuery {
     };
   }
 
+  private run(): ExecutableQuery<QueryResult<RowObject>> {
+    return new ExecutableQuery((client) =>
+      client.query(this.getQueryConfig()).catch((e) => {
+        throw new SqlExecutionError(`Got "${e.message}" on query "${this.queryText}"`, e);
+      })
+    );
+  }
+
   /**
    * Create an ExecutableQuery that will ignore the any rows returned by postgres
    */
   update(): ExecutableQuery<void> {
-    return new ExecutableQuery((client) => client.query(this.getQueryConfig()).then(() => {}));
+    return this.run().map(() => {});
   }
 
   /**
@@ -65,9 +73,7 @@ export class SqlQuery {
    * @param deser - the deserializer used by each rows
    */
   list<T>(deser: SqlDeserializer<T>): ExecutableQuery<T[]> {
-    return new ExecutableQuery(async (client) => {
-      const { rows } = await client.query(this.getQueryConfig());
-
+    return this.run().map(({ rows }) => {
       return sequenceResult(rows.map((row) => deser.deserialize(row))).getOrThrow();
     });
   }
@@ -79,15 +85,13 @@ export class SqlQuery {
    * @param deser - the deserializer used by the row
    */
   option<T>(deser: SqlDeserializer<T>): ExecutableQuery<T | null> {
-    return new ExecutableQuery(async (client) => {
-      const queryConfig = this.getQueryConfig();
-      const { rows } = await client.query(queryConfig);
+    return this.run().map(({ rows }) => {
       if (rows.length === 0) {
         return null;
       } else if (rows.length === 1) {
         return deser.deserialize(rows[0]).getOrThrow();
       } else {
-        throw new Error(`More than one row were returned for query ${queryConfig.text}`);
+        throw new Error(`More than one row were returned for query ${this.queryText}`);
       }
     });
   }
@@ -98,16 +102,21 @@ export class SqlQuery {
    * @param deser - the deserializer used by the row
    */
   unique<T>(deser: SqlDeserializer<T>): ExecutableQuery<T> {
-    return new ExecutableQuery(async (client) => {
-      const queryConfig = this.getQueryConfig();
-      const { rows } = await client.query(queryConfig);
+    return this.run().map(({ rows }) => {
       if (rows.length === 0) {
-        throw new Error(`No row returned for query ${queryConfig.text}`);
+        throw new Error(`No row returned for query ${this.queryText}`);
       } else if (rows.length === 1) {
         return deser.deserialize(rows[0]).getOrThrow();
       } else {
-        throw new Error(`More than one row were returned for query ${queryConfig.text}`);
+        throw new Error(`More than one row were returned for query ${this.queryText}`);
       }
     });
+  }
+}
+
+export class SqlExecutionError extends Error {
+  constructor(message: string, private originalError: Error) {
+    super(message);
+    this.stack = new Error(message).stack + '\n' + this.originalError.stack;
   }
 }

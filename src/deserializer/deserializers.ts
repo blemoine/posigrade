@@ -22,6 +22,11 @@ const toJsonObjectDef: DeserDefinition<object> = {
   errorMessage: (value) => `'${value}' is not an object`,
 };
 
+const toBooleanObjectDef: DeserDefinition<boolean> = {
+  guard: (value): value is boolean => typeof value === 'boolean',
+  errorMessage: (value) => `'${value}' is not a boolean`,
+};
+
 export const deser = {
   toNumber: toNamedDeserializer(toNumberDef),
   toString: toNamedDeserializer(toStringDef),
@@ -29,4 +34,5 @@ export const deser = {
   toNull: NullDeserializer,
   toDate: toNamedDeserializer(toDateDef),
   toJsonObject: toNamedDeserializer(toJsonObjectDef),
+  toBoolean: toNamedDeserializer(toBooleanObjectDef),
 };

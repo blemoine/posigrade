@@ -8,12 +8,14 @@ import { Sql } from '../query/sql-template-string';
 const gameDeserializer = SqlDeserializer.fromRecord({
   id: deser.toInteger,
   name: deser.toString,
+  visible: deser.toBoolean,
 });
 type Game = InferDeserializerType<typeof gameDeserializer>;
 
 const gameAndReviewRowDeser = SqlDeserializer.fromRecord({
   id: deser.toInteger,
   name: deser.toString,
+  visible: deser.toBoolean,
   review: SqlDeserializer.fromRecord({
     id: deser.toInteger.orNull().forColumn('review_id'),
     stars: deser.toInteger.orNull(),
@@ -27,18 +29,19 @@ const gameAndReviewRowDeser = SqlDeserializer.fromRecord({
 interface GameAndReviews {
   id: number;
   name: string;
+  visible: boolean;
   reviews: { id: number; stars: number; comment: string | null; creationDate: Date }[];
 }
 function isNotNil<T>(t: T | null | undefined): t is T {
   return t !== null && t !== undefined;
 }
 class GameRepo {
-  addGame(name: string): ExecutableQuery<Game> {
-    return Sql`INSERT INTO games(name) VALUES (${name}) RETURNING *`.unique(gameDeserializer);
+  addGame(name: string, visible: boolean): ExecutableQuery<Game> {
+    return Sql`INSERT INTO games(name, visible) VALUES (${name}, ${visible}) RETURNING *`.unique(gameDeserializer);
   }
 
   findGameAndReviews(gameId: number): ExecutableQuery<GameAndReviews | null> {
-    return Sql`SELECT g.id, g.name, 
+    return Sql`SELECT g.id, g.name, g.visible,
                       r.id as review_id, r.stars, r.comment, r.creation_date
                  FROM games g
                  LEFT JOIN reviews r ON r.game_id = g.id
@@ -49,11 +52,12 @@ class GameRepo {
         if (rows.length === 0) {
           return null;
         } else {
-          const { id, name } = rows[0];
+          const { id, name, visible } = rows[0];
 
           return {
             id,
             name,
+            visible,
             reviews: rows.map(({ review }) => review).filter(isNotNil),
           };
         }
@@ -87,7 +91,7 @@ class GameService {
   constructor(private sqlExecutor: SqlExecutor, private gameRepo: GameRepo, private reviewRepo: ReviewRepo) {}
   addGameAndReviews(gameName: string, reviews: ReviewCreateInput[]): Promise<GameAndReviews> {
     return this.sqlExecutor.transact(async (client) => {
-      const game = await this.gameRepo.addGame(gameName).run(client);
+      const game = await this.gameRepo.addGame(gameName, true).run(client);
       const reviewsForGame = await Promise.all(reviews.map((r) => this.reviewRepo.addReview(game.id, r).run(client)));
 
       return {
@@ -119,7 +123,8 @@ describe('bands integration test', () => {
   it('should support initialization in query in more straightforward manner', async () => {
     const sqlExecutor = SqlExecutor(pool);
 
-    const createGamesTable = Sql`CREATE TABLE games(id SERIAL PRIMARY KEY, name TEXT NOT NULL)`.update();
+    const createGamesTable =
+      Sql`CREATE TABLE games(id SERIAL PRIMARY KEY, name TEXT NOT NULL, visible BOOLEAN NOT NULL)`.update();
     const createReviewsTable = Sql`CREATE TABLE reviews(
                id SERIAL PRIMARY KEY, 
                game_id INTEGER REFERENCES games(id) NOT NULL,

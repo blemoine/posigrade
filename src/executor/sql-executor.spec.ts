@@ -42,7 +42,9 @@ describe('SqlExecutor', () => {
         .run(Sql`SELECT name FROM brownies`.list(deser.toString.forColumn('name')))
         .catch((e) => e);
 
-      expect(result.message).toStrictEqual(`relation "brownies" does not exist`);
+      expect(result.message).toStrictEqual(
+        'Got "relation "brownies" does not exist" on query "SELECT name FROM brownies"'
+      );
     });
   });
 });
