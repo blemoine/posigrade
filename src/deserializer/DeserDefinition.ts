@@ -38,6 +38,11 @@ export class NamedDeserializer<T> {
       return this.forColumn(col).transform(mapper);
     });
   }
+  chain<B>(mapper: (t: T) => NamedDeserializer<B>): NamedDeserializer<B> {
+    return new NamedDeserializer((col) => {
+      return this.forColumn(col).chain((t) => mapper(t).forColumn(col));
+    });
+  }
   or<U>(other: NamedDeserializer<U>): NamedDeserializer<T | U> {
     return new NamedDeserializer<T | U>((col) => this.forColumn(col).or(other.forColumn(col)));
   }

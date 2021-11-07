@@ -96,6 +96,12 @@ export class SqlDeserializer<T> {
     });
   }
 
+  chain<B>(mapper: (t: T) => SqlDeserializer<B>): SqlDeserializer<B> {
+    return new SqlDeserializer((row) => {
+      return this.deserialize(row).chain((t) => mapper(t).deserialize(row));
+    });
+  }
+
   or<B>(sqlDeserializer: SqlDeserializer<B>): SqlDeserializer<T | B> {
     return new SqlDeserializer<T | B>((row): Result<T | B> => {
       const v1 = this.deserialize(row);

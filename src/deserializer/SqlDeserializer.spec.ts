@@ -30,6 +30,14 @@ describe('SqlDeserializer', () => {
     });
   });
 
+  describe('chain', () => {
+    it('should chain the result of the serializer on success', () => {
+      const result = idDeserializer.chain(() => nameDeserializer);
+
+      expect(result.deserialize({ id: 5, name: 'test' })).toStrictEqual(Success.of('test'));
+    });
+  });
+
   describe('fromRecord', () => {
     it('should build a record deserializer', () => {
       const deser = SqlDeserializer.fromRecord({ myId: idDeserializer, myName: nameDeserializer });
