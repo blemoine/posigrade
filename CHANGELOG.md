@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.14](https://github.com/blemoine/posigrade/compare/v0.0.13...v0.0.14) (2021-11-07)
+
+
+### Features
+
+* **deserializer:** add `fromTuple` method ([fea6d0a](https://github.com/blemoine/posigrade/commit/fea6d0ac66db671d7a63ce9d7301fe621d371e2e))
+* **deserializers:** add `chain` method ([89f7e80](https://github.com/blemoine/posigrade/commit/89f7e803e4fc12e76b0d6f16cceefa0e4a1b7f4e))
+
 ### [0.0.13](https://github.com/blemoine/posigrade/compare/v0.0.12...v0.0.13) (2021-11-07)
 
 

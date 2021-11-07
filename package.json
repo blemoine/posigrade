@@ -1,6 +1,6 @@
 {
   "name": "posigrade",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "description": "A library to simplify pg query handling - not an ORM",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
