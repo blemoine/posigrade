@@ -1,15 +1,6 @@
 import { Failure, Result, sequenceResult, Success } from './Result';
 import * as fc from 'fast-check';
-import { Arbitrary } from 'fast-check';
-import { NonEmptyArray } from '../utils/non-empty-array';
-
-const id = <T>(x: T): T => x;
-
-const arbSuccess = fc.anything().map((i) => Success.of(i));
-const arbFailure = fc.string().map((message) => Failure.raise(message));
-const arbResult: Arbitrary<Result<any>> = fc.oneof(arbSuccess, arbFailure);
-const arbNonEmptyArray = <T>(arbT: Arbitrary<T>): Arbitrary<NonEmptyArray<T>> =>
-  arbT.chain((t) => fc.array(arbT).map((arrT) => [t, ...arrT]));
+import { arbFailure, arbNonEmptyArray, arbResult, id } from './Result.tests.helper';
 
 describe('Result', () => {
   describe('zip', () => {
@@ -58,14 +49,14 @@ describe('Result', () => {
   describe('recover', () => {
     it('should do nothing if it is a Success', () => {
       fc.assert(
-        fc.property(fc.anything(), fc.func(arbResult), (a, fn) => {
+        fc.property(fc.anything(), fc.func(arbResult(fc.anything())), (a, fn) => {
           expect(Success.of(a).recover(fn)).toStrictEqual(Success.of(a));
         })
       );
     });
     it('should return the recovered result if it is a Failure', () => {
       fc.assert(
-        fc.property(fc.string(), arbResult, (message, result) => {
+        fc.property(fc.string(), arbResult(fc.anything()), (message, result) => {
           expect(Failure.raise(message).recover(() => result)).toStrictEqual(result);
         })
       );
@@ -75,14 +66,14 @@ describe('Result', () => {
   describe('should form a functor', () => {
     it('should respect identity', () => {
       fc.assert(
-        fc.property(arbResult, (result) => {
+        fc.property(arbResult(fc.anything()), (result) => {
           expect(result.map(id)).toStrictEqual(result);
         })
       );
     });
     it('should respect composition', () => {
       fc.assert(
-        fc.property(arbResult, fc.func(fc.anything()), fc.func(fc.anything()), (result, fn, fn2) => {
+        fc.property(arbResult(fc.anything()), fc.func(fc.anything()), fc.func(fc.anything()), (result, fn, fn2) => {
           expect(result.map(fn).map(fn2)).toStrictEqual(result.map((x) => fn2(fn(x))));
         })
       );
@@ -92,7 +83,7 @@ describe('Result', () => {
   describe('should form a monad', () => {
     it('should respect right identity', () => {
       fc.assert(
-        fc.property(arbResult, (result) => {
+        fc.property(arbResult(fc.anything()), (result) => {
           expect(result.chain((x) => Success.of(x))).toStrictEqual(result);
         })
       );
@@ -100,7 +91,7 @@ describe('Result', () => {
 
     it('should respect left identity', () => {
       fc.assert(
-        fc.property(fc.anything(), fc.func(arbResult), (a, fn) => {
+        fc.property(fc.anything(), fc.func(arbResult(fc.anything())), (a, fn) => {
           expect(Success.of(a).chain(fn)).toStrictEqual(fn(a));
         })
       );
@@ -108,9 +99,14 @@ describe('Result', () => {
 
     it('should respect composition', () => {
       fc.assert(
-        fc.property(arbResult, fc.func(arbResult), fc.func(arbResult), (result, fn, fn2) => {
-          expect(result.chain(fn).chain(fn2)).toStrictEqual(result.chain((x) => fn(x).chain(fn2)));
-        })
+        fc.property(
+          arbResult(fc.anything()),
+          fc.func(arbResult(fc.anything())),
+          fc.func(arbResult(fc.anything())),
+          (result, fn, fn2) => {
+            expect(result.chain(fn).chain(fn2)).toStrictEqual(result.chain((x) => fn(x).chain(fn2)));
+          }
+        )
       );
     });
   });
