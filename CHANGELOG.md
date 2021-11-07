@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.13](https://github.com/blemoine/posigrade/compare/v0.0.12...v0.0.13) (2021-11-07)
+
+
+### Features
+
+* **deser:** add support for boolean ([f358e5e](https://github.com/blemoine/posigrade/commit/f358e5e019bbff757cf05a5eb31a071f7af8fa2c))
+
+
+### Bug Fixes
+
+* **deserializer:** support for interface ([02ed8da](https://github.com/blemoine/posigrade/commit/02ed8dae174150d9bbf6df4d789f6d311b0f7940))
+
 ### [0.0.12](https://github.com/blemoine/posigrade/compare/v0.0.11...v0.0.12) (2021-11-05)
 
 
