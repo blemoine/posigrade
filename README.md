@@ -340,9 +340,10 @@ The service can be easily tested by faking the Executor and the repo:
 
 ```ts
 const fakeClient: QueryableClient = {
-  query: (): any => ({
-    rows: [],
-  }),
+  query: (): any =>
+    Promise.resolve({
+      rows: [],
+    }),
 };
 const fakeExecutor: SqlExecutor = {
   async run<T>(fn: ExecutableQuery<T> | ((client: QueryableClient) => Promise<T>)): Promise<T> {
@@ -423,9 +424,10 @@ For the tests, the idea is same than above
 
 ```ts
 const fakeClient: QueryableClient = {
-  query: (): any => ({
-    rows: [],
-  }),
+  query: (): any =>
+    Promise.resolve({
+      rows: [],
+    }),
 };
 const fakeExecutor: SqlExecutor = {
   async run<T>(fn: ExecutableQuery<T> | ((client: QueryableClient) => Promise<T>)): Promise<T> {

@@ -1,4 +1,4 @@
-import { Result, sequenceResult } from '../result/Result';
+import { Result, sequenceResult, Success } from '../result/Result';
 import { NamedDeserializer } from './DeserDefinition';
 
 export type RowObject = { [p: string]: unknown };
@@ -78,6 +78,10 @@ export class SqlDeserializer<T> {
 
       return result.map(Object.fromEntries);
     });
+  }
+
+  static of<U>(u: U): SqlDeserializer<U> {
+    return new SqlDeserializer(() => Success.of(u));
   }
 
   constructor(public readonly deserialize: (row: RowObject) => Result<T>) {}

@@ -91,7 +91,7 @@ export class SqlQuery {
       } else if (rows.length === 1) {
         return deser.deserialize(rows[0]).getOrThrow();
       } else {
-        throw new Error(`More than one row were returned for query ${this.queryText}`);
+        throw new Error(`More than one row were returned for query "${this.queryText}"`);
       }
     });
   }
@@ -104,11 +104,11 @@ export class SqlQuery {
   unique<T>(deser: SqlDeserializer<T>): ExecutableQuery<T> {
     return this.run().map(({ rows }) => {
       if (rows.length === 0) {
-        throw new Error(`No row returned for query ${this.queryText}`);
+        throw new Error(`No row returned for query "${this.queryText}"`);
       } else if (rows.length === 1) {
         return deser.deserialize(rows[0]).getOrThrow();
       } else {
-        throw new Error(`More than one row were returned for query ${this.queryText}`);
+        throw new Error(`More than one row were returned for query "${this.queryText}"`);
       }
     });
   }
