@@ -73,7 +73,7 @@ export class Failure<T> {
   }
 }
 
-export function sequenceResult<A>(arr: Array<Result<A>>): Result<Array<A>> {
+export function sequenceResult<A>(arr: ReadonlyArray<Result<A>>): Result<ReadonlyArray<A>> {
   return arr.reduce<Result<Array<A>>>((maybeResults, maybeValue) => {
     return maybeResults.zip(maybeValue).map(([acc, value]) => [...acc, value]);
   }, Success.of([]));

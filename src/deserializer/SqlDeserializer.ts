@@ -80,6 +80,13 @@ export class SqlDeserializer<T> {
     });
   }
 
+  static fromTuple<O extends readonly unknown[]>(tuple: { [I in keyof O]: SqlDeserializer<O[I]> }): SqlDeserializer<O> {
+    return new SqlDeserializer<O>((row) => {
+      const results = tuple.map((deser) => deser.deserialize(row));
+      return sequenceResult(results) as Result<O>;
+    });
+  }
+
   static of<U>(u: U): SqlDeserializer<U> {
     return new SqlDeserializer(() => Success.of(u));
   }

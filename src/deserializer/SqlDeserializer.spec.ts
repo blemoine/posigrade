@@ -55,4 +55,15 @@ describe('SqlDeserializer', () => {
       expect(deser.deserialize({ id: 5, name: 'Georges' })).toStrictEqual(Success.of({ id: 5, name: 'Georges' }));
     });
   });
+
+  describe('fromTuple', () => {
+    it('should build a record deserializer', () => {
+      const deser: SqlDeserializer<readonly [number, string]> = SqlDeserializer.fromTuple([
+        idDeserializer,
+        nameDeserializer,
+      ] as const);
+
+      expect(deser.deserialize({ id: 5, name: 'Georges' })).toStrictEqual(Success.of([5, 'Georges']));
+    });
+  });
 });

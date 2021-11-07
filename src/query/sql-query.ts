@@ -72,7 +72,7 @@ export class SqlQuery {
    *
    * @param deser - the deserializer used by each rows
    */
-  list<T>(deser: SqlDeserializer<T>): ExecutableQuery<T[]> {
+  list<T>(deser: SqlDeserializer<T>): ExecutableQuery<readonly T[]> {
     return this.run().map(({ rows }) => {
       return sequenceResult(rows.map((row) => deser.deserialize(row))).getOrThrow();
     });
