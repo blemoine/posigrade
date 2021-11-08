@@ -105,14 +105,14 @@ Call the `run` method. The input parameter is a callback taking the postgres cli
 
 ```ts
 // Returns Promise<number[]>
-sqlExecutor.run((client) => SQL`SELECT id FROM my_table`.list(deser.toInteger.forColumn('id')).run(client));
+sqlExecutor.run((client) => Sql`SELECT id FROM my_table`.list(deser.toInteger.forColumn('id')).run(client));
 ```
 
 To simplify things, it can also take an `ExecutableQuery<T>`
 
 ```ts
 // Returns Promise<number[]>
-sqlExecutor.run(SQL`SELECT id FROM my_table`.list(deser.toInteger.forColumn('id')));
+sqlExecutor.run(Sql`SELECT id FROM my_table`.list(deser.toInteger.forColumn('id')));
 ```
 
 #### Transaction run
@@ -123,8 +123,8 @@ if any `Error` is thrown in the callback, all changes done will be rollbacked.
 ```ts
 // Returns Promise<number[]>
 sqlExecutor.transact((client) => {
-  SQL`INSERT INTO my_table(id) VALUES ${1}`.update().run(client);
-  SQL`INSERT INTO my_table(id) VALUES ${2}`.update().run(client);
+  Sql`INSERT INTO my_table(id) VALUES ${1}`.update().run(client);
+  Sql`INSERT INTO my_table(id) VALUES ${2}`.update().run(client);
 });
 ```
 
@@ -137,7 +137,7 @@ Simple deserializers can be used:
 ```ts
 const idDeserializer: SqlDeserializer<number> = deser.toInteger.forColumn('id');
 
-SQL`SELECT id FROM my_table`.list(idDeserializer); // deserialize to numnber[]
+Sql`SELECT id FROM my_table`.list(idDeserializer); // deserialize to numnber[]
 ```
 
 If something may be nullable, it should be explicit in the SqlDeserializer
@@ -145,7 +145,7 @@ If something may be nullable, it should be explicit in the SqlDeserializer
 ```ts
 const nameDeserializer: SqlDeserializer<string | null> = deser.toString.orNull().forColumn('name');
 
-SQL`SELECT name FROM my_table`.list(nameDeserializer); // deserialize to (string | null)[]
+Sql`SELECT name FROM my_table`.list(nameDeserializer); // deserialize to (string | null)[]
 ```
 
 If you want to get a richer type, you can transform the result type of the serializer with `map`
@@ -153,7 +153,7 @@ If you want to get a richer type, you can transform the result type of the seria
 ```ts
 const nameDeserializer: SqlDeserializer<string | null> = deser.toString.map((name) => ({ name })).forColumn('name');
 
-SQL`SELECT name FROM my_table`.list(nameDeserializer); // deserialize to ({name:string})[]
+Sql`SELECT name FROM my_table`.list(nameDeserializer); // deserialize to ({name:string})[]
 ```
 
 Finally, to get a more complex type, we can combine serializers
@@ -165,7 +165,7 @@ const userDeser = SqlDeserializer.fromRecord({
   creationDate: deser.toDate.forColumn('creation_date'),
 });
 
-SQL`SELECT id, name, creation_date FROM users`.list(userDeser); // deserializer to ({id:number, name:string, creationDate: Date})[]
+Sql`SELECT id, name, creation_date FROM users`.list(userDeser); // deserializer to ({id:number, name:string, creationDate: Date})[]
 ```
 
 You can explicitly set the type expected from a deserializer (and TS will check that you deserializer returns correctly the expected type)
@@ -360,6 +360,7 @@ const fakeExecutor: SqlExecutor = {
       return fn(fakeClient);
     }
   },
+  async close() {},
 };
 const fakeRepo = {
   createUser({ name }: { name: string }): ExecutableQuery<User> {
@@ -444,6 +445,7 @@ const fakeExecutor: SqlExecutor = {
       return fn(fakeClient);
     }
   },
+  async close() {},
 };
 const fakeRepo = {
   createUser({ name }: { name: string }): ExecutableQuery<User> {

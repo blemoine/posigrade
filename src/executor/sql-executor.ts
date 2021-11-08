@@ -53,4 +53,8 @@ export const SqlExecutor = (pool: Pool) => ({
       client.release();
     }
   },
+
+  close(): Promise<void> {
+    return pool.end();
+  },
 });
