@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.20](https://github.com/blemoine/posigrade/compare/v0.0.19...v0.0.20) (2021-11-10)
+
+
+### Features
+
+* **query:** add sequence support ([ea4fc7d](https://github.com/blemoine/posigrade/commit/ea4fc7d330d05fe00948dc37232cac0b4eee9dda))
+
 ### [0.0.19](https://github.com/blemoine/posigrade/compare/v0.0.18...v0.0.19) (2021-11-10)
 
 
