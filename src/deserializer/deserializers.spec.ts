@@ -9,9 +9,7 @@ describe('deser', () => {
     });
     it('should return a failure if the decimal string is not a number', () => {
       const result = deser.decimalToNumber.forColumn('sum').deserialize({ sum: '4notAnumber' });
-      expect(result).toStrictEqual(
-        Failure.raise("Value '4notAnumber' is not convertible without loss to a number")
-      );
+      expect(result).toStrictEqual(Failure.raise("Value '4notAnumber' is not convertible without loss to a number"));
     });
     it('should return a failure if the decimal string overflows', () => {
       const result = deser.decimalToNumber.forColumn('sum').deserialize({ sum: '90071992547409923' });
