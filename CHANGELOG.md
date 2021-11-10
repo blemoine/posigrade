@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.16](https://github.com/blemoine/posigrade/compare/v0.0.15...v0.0.16) (2021-11-10)
+
+
+### Features
+
+* **deserializer:** add string to number deserializer ([c89772a](https://github.com/blemoine/posigrade/commit/c89772a602a6e66bffe187e29327d74e7f5a1e6e))
+
 ### [0.0.15](https://github.com/blemoine/posigrade/compare/v0.0.14...v0.0.15) (2021-11-08)
 
 
