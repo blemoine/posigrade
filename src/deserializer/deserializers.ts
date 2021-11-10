@@ -36,7 +36,7 @@ export const deser = {
   toDate: toNamedDeserializer(toDateDef),
   toJsonObject: toNamedDeserializer(toJsonObjectDef),
   toBoolean: toNamedDeserializer(toBooleanObjectDef),
-  decimalToNumber: toNamedDeserializer(toStringDef).transform((str) => {
+  decimalToNumber: toNamedDeserializer(toStringDef).transform<number>((str) => {
     const floatResult = parseFloat(str);
     if (str === floatResult.toString()) {
       return Success.of(floatResult);
