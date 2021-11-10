@@ -37,8 +37,9 @@ export const deser = {
   toJsonObject: toNamedDeserializer(toJsonObjectDef),
   toBoolean: toNamedDeserializer(toBooleanObjectDef),
   decimalToNumber: toNamedDeserializer(toStringDef).transform<number>((str) => {
-    const floatResult = parseFloat(str);
-    if (str === floatResult.toString()) {
+    const floatResult = Number.parseFloat(str);
+    const floatResultAsStr = floatResult.toString();
+    if (str === (Number.isInteger(floatResultAsStr) ? floatResultAsStr : floatResultAsStr.padEnd(str.length, '0'))) {
       return Success.of(floatResult);
     } else {
       return Failure.raise(`Value '${str}' is not convertible without loss to a number`);
