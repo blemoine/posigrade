@@ -24,6 +24,30 @@ describe('ExecutableQuery', () => {
     });
   });
 
+  describe('sequencePar', () => {
+    it('should run in parallel all the executable queries', async () => {
+      const query1 = ExecutableQuery.of(1 as const);
+      const query2 = ExecutableQuery.of('a' as const);
+      const query3 = ExecutableQuery.of(true as const);
+
+      const resultOfSequence = ExecutableQuery.sequencePar([query1, query2, query3] as const);
+      const result: readonly [1, 'a', true] = await resultOfSequence.run(fakeClient);
+      expect(result).toStrictEqual([1, 'a', true]);
+    });
+  });
+
+  describe('sequence', () => {
+    it('should run in sequence all the executable queries', async () => {
+      const query1 = ExecutableQuery.of(1 as const);
+      const query2 = ExecutableQuery.of('a' as const);
+      const query3 = ExecutableQuery.of(true as const);
+
+      const resultOfSequence = ExecutableQuery.sequence([query1, query2, query3] as const);
+      const result: readonly [1, 'a', true] = await resultOfSequence.run(fakeClient);
+      expect(result).toStrictEqual([1, 'a', true]);
+    });
+  });
+
   describe('should form a functor', () => {
     it('should respect identity', () => {
       return fc.assert(

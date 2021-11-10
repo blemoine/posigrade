@@ -1,4 +1,5 @@
 import { ClientBase } from 'pg';
+import { traverse } from '../utils/traverse';
 
 /**
  * ClientBase may be a pain to fake for test, and we only use `query` anyway,
@@ -54,6 +55,13 @@ export class ExecutableQuery<T> {
   static of<U>(u: U): ExecutableQuery<U> {
     return new ExecutableQuery<U>(() => Promise.resolve(u));
   }
+  static sequencePar<A extends readonly unknown[]>(arr: { [K in keyof A]: ExecutableQuery<A[K]> }): ExecutableQuery<A> {
+    return new ExecutableQuery<A>((client) => Promise.all(arr.map((a) => a.run(client))) as any);
+  }
+  static sequence<A extends readonly unknown[]>(arr: { [K in keyof A]: ExecutableQuery<A[K]> }): ExecutableQuery<A> {
+    return new ExecutableQuery<A>((client) => traverse(arr, (a) => a.run(client)) as Promise<A>);
+  }
+
   constructor(public run: (client: QueryableClient) => Promise<T>) {}
   map<U>(fn: (t: T) => U): ExecutableQuery<U> {
     return new ExecutableQuery<U>((client) => this.run(client).then(fn));
