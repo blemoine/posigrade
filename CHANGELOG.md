@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.18](https://github.com/blemoine/posigrade/compare/v0.0.17...v0.0.18) (2021-11-10)
+
+
+### Bug Fixes
+
+* **deserializers:** support parsing of floats ending with 0 ([4311a77](https://github.com/blemoine/posigrade/commit/4311a77b2508ad05b63abf85d065dd13cfe4fe94))
+
 ### [0.0.17](https://github.com/blemoine/posigrade/compare/v0.0.16...v0.0.17) (2021-11-10)
 
 
