@@ -11,6 +11,11 @@ describe('deser', () => {
       const result = deser.decimalToNumber.forColumn('sum').deserialize({ sum: '4.15000' });
       expect(result).toStrictEqual(Success.of(4.15));
     });
+    it('should return the decimal string as a number if the number is an integer ending with some 0', () => {
+      const result = deser.decimalToNumber.forColumn('sum').deserialize({ sum: '12.00000' });
+      expect(result).toStrictEqual(Success.of(12));
+    });
+
     it('should return a failure if the decimal string is not a number', () => {
       const result = deser.decimalToNumber.forColumn('sum').deserialize({ sum: '4notAnumber' });
       expect(result).toStrictEqual(Failure.raise("Value '4notAnumber' is not convertible without loss to a number"));
