@@ -1,4 +1,5 @@
 import { DeserDefinition, NullDeserializer, toNamedDeserializer } from './DeserDefinition';
+import { Failure, Success } from '../result/Result';
 
 const toNumberDef: DeserDefinition<number> = {
   guard: (value): value is number => typeof value === 'number',
@@ -35,4 +36,12 @@ export const deser = {
   toDate: toNamedDeserializer(toDateDef),
   toJsonObject: toNamedDeserializer(toJsonObjectDef),
   toBoolean: toNamedDeserializer(toBooleanObjectDef),
+  decimalToNumber: toNamedDeserializer(toStringDef).transform((str) => {
+    const floatResult = parseFloat(str);
+    if (str === floatResult.toString()) {
+      return Success.of(floatResult);
+    } else {
+      return Failure.raise(`Value '${str}' is not convertible without loss to a number`);
+    }
+  }),
 };
