@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.1.0](https://github.com/blemoine/posigrade/compare/v1.0.0...v1.1.0) (2021-11-11)
+
+
+### Features
+
+* **query:** add support for arbitrary type for values ([e3e0268](https://github.com/blemoine/posigrade/commit/e3e0268f251a73519bd97fd74931bee07a30b375))
+
 ## [1.0.0](https://github.com/blemoine/posigrade/compare/v0.0.20...v1.0.0) (2021-11-10)
 
 ### [0.0.20](https://github.com/blemoine/posigrade/compare/v0.0.19...v0.0.20) (2021-11-10)
