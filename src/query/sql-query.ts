@@ -4,7 +4,7 @@ import { sequenceResult } from '../result/Result';
 import { NonEmptyArray } from '../utils/non-empty-array';
 import { ExecutableQuery } from './executable-query';
 
-export type BaseSupportedValueType = string | number | boolean | Date | null;
+export type BaseSupportedValueType = string | number | boolean | Date | null | Record<string, unknown>;
 export type SupportedValueType = BaseSupportedValueType | Array<BaseSupportedValueType>;
 
 /**
@@ -42,7 +42,6 @@ export class SqlQuery {
     this.queryText = strings.reduce((currText, str, i) => {
       return currText + '$' + i + str;
     });
-    this.values = values;
   }
 
   private getQueryConfig(): QueryConfig {
