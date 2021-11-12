@@ -1,5 +1,6 @@
 import { SqlDeserializer } from './SqlDeserializer';
 import { Failure, Result, Success } from '../result/Result';
+import { NonEmptyArray } from '../utils/non-empty-array';
 
 /**
  * Conceptually, a NamedDeserializer<T> is function
@@ -32,6 +33,11 @@ export class NamedDeserializer<T> {
   constructor(public forColumn: (col: string) => SqlDeserializer<T>) {}
   map<U>(fn: (t: T) => U): NamedDeserializer<U> {
     return new NamedDeserializer<U>((col) => this.forColumn(col).map(fn));
+  }
+  mapFailure(
+    mapper: (colName: string, messages: NonEmptyArray<string>) => NonEmptyArray<string>
+  ): NamedDeserializer<T> {
+    return new NamedDeserializer<T>((col) => this.forColumn(col).mapFailure((messages) => mapper(col, messages)));
   }
   transform<B>(mapper: (t: T) => Result<B>): NamedDeserializer<B> {
     return new NamedDeserializer((col) => {

@@ -1,5 +1,6 @@
 import { Result, sequenceResult, Success } from '../result/Result';
 import { NamedDeserializer } from './DeserDefinition';
+import { NonEmptyArray } from '../utils/non-empty-array';
 
 export type RowObject = { [p: string]: unknown };
 
@@ -95,6 +96,9 @@ export class SqlDeserializer<T> {
 
   map<U>(fn: (t: T) => U): SqlDeserializer<U> {
     return new SqlDeserializer<U>((row) => this.deserialize(row).map(fn));
+  }
+  mapFailure(mapper: (messages: NonEmptyArray<string>) => NonEmptyArray<string>): SqlDeserializer<T> {
+    return new SqlDeserializer<T>((row) => this.deserialize(row).mapFailure(mapper));
   }
 
   transform<B>(mapper: (t: T) => Result<B>): SqlDeserializer<B> {

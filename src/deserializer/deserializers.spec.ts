@@ -27,4 +27,33 @@ describe('deser', () => {
       );
     });
   });
+  describe('toArray', () => {
+    it('should deserialize an array of specified type', () => {
+      const result = deser
+        .toArray(deser.toInteger)
+        .forColumn('nb')
+        .deserialize({ nb: [1, 2, 3] });
+      expect(result).toStrictEqual(Success.of([1, 2, 3]));
+    });
+    it('should return a failure if the type is not an array', () => {
+      const result = deser.toArray(deser.toInteger).forColumn('nb').deserialize({ nb: 3 });
+      expect(result).toStrictEqual(
+        new Failure(["Items in array of col 'nb' are not valid", "Column 'nb': '3' is not an array"])
+      );
+    });
+    it('should return a failure if the type is an array, but the inner type is invalid', () => {
+      const result = deser
+        .toArray(deser.toString)
+        .forColumn('nb')
+        .deserialize({ nb: [1, 2, 3] });
+      expect(result).toStrictEqual(
+        new Failure([
+          "Items in array of col 'nb' are not valid",
+          "Column '_0': '1' is not a string",
+          "Column '_1': '2' is not a string",
+          "Column '_2': '3' is not a string",
+        ])
+      );
+    });
+  });
 });

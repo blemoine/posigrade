@@ -9,6 +9,9 @@ export class Success<T> {
   map<B>(mapper: (t: T) => B): Result<B> {
     return Success.of(mapper(this.value));
   }
+  mapFailure(_mapper: (messages: NonEmptyArray<string>) => NonEmptyArray<string>): Success<T> {
+    return this;
+  }
 
   chain<B>(mapper: (t: T) => Result<B>): Result<B> {
     return mapper(this.value);
@@ -53,6 +56,9 @@ export class Failure<T> {
   constructor(public readonly messages: NonEmptyArray<string>) {}
   map<B>(_mapper: (t: T) => B): Result<B> {
     return this as any;
+  }
+  mapFailure(mapper: (messages: NonEmptyArray<string>) => NonEmptyArray<string>): Failure<T> {
+    return new Failure<T>(mapper(this.messages));
   }
   chain<B>(_mapper: (t: T) => Result<B>): Result<B> {
     return this as any;

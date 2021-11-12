@@ -1,42 +1,46 @@
-import { DeserDefinition, NullDeserializer, toNamedDeserializer } from './DeserDefinition';
-import { Failure, Success } from '../result/Result';
+import { NamedDeserializer, NullDeserializer, toNamedDeserializer } from './DeserDefinition';
+import { Failure, sequenceResult, Success } from '../result/Result';
 
-const toNumberDef: DeserDefinition<number> = {
-  guard: (value): value is number => typeof value === 'number',
-  errorMessage: (value) => `'${value}' is not a number`,
-};
-const toIntegerDef: DeserDefinition<number> = {
-  guard: (value): value is number => typeof value === 'number' && Number.isInteger(value),
-  errorMessage: (value) => `'${value}' is not an integer`,
-};
-const toStringDef: DeserDefinition<string> = {
-  guard: (value): value is string => typeof value === 'string',
-  errorMessage: (value) => `'${value}' is not a string`,
-};
-
-const toDateDef: DeserDefinition<Date> = {
-  guard: (value): value is Date => value instanceof Date,
-  errorMessage: (value) => `'${value}' is not a Date`,
-};
-const toJsonObjectDef: DeserDefinition<object> = {
-  guard: (value): value is object => value != null && typeof value == 'object',
-  errorMessage: (value) => `'${value}' is not an object`,
-};
-
-const toBooleanObjectDef: DeserDefinition<boolean> = {
-  guard: (value): value is boolean => typeof value === 'boolean',
-  errorMessage: (value) => `'${value}' is not a boolean`,
-};
+const deserDefinition = {
+  toNumberDef: {
+    guard: (value: unknown): value is number => typeof value === 'number',
+    errorMessage: (value: unknown) => `'${value}' is not a number`,
+  },
+  toIntegerDef: {
+    guard: (value: unknown): value is number => typeof value === 'number' && Number.isInteger(value),
+    errorMessage: (value: unknown) => `'${value}' is not an integer`,
+  },
+  toStringDef: {
+    guard: (value: unknown): value is string => typeof value === 'string',
+    errorMessage: (value: unknown) => `'${value}' is not a string`,
+  },
+  toDateDef: {
+    guard: (value: unknown): value is Date => value instanceof Date,
+    errorMessage: (value: unknown) => `'${value}' is not a Date`,
+  },
+  toJsonObjectDef: {
+    guard: (value: unknown): value is object => value != null && typeof value == 'object',
+    errorMessage: (value: unknown) => `'${value}' is not an object`,
+  },
+  toBooleanObjectDef: {
+    guard: (value: unknown): value is boolean => typeof value === 'boolean',
+    errorMessage: (value: unknown) => `'${value}' is not a boolean`,
+  },
+  toArrayDef: {
+    guard: (value: unknown): value is ReadonlyArray<unknown> => Array.isArray(value),
+    errorMessage: (value: unknown) => `'${value}' is not an array`,
+  },
+} as const;
 
 export const deser = {
-  toNumber: toNamedDeserializer(toNumberDef),
-  toString: toNamedDeserializer(toStringDef),
-  toInteger: toNamedDeserializer(toIntegerDef),
+  toNumber: toNamedDeserializer(deserDefinition.toNumberDef),
+  toString: toNamedDeserializer(deserDefinition.toStringDef),
+  toInteger: toNamedDeserializer(deserDefinition.toIntegerDef),
   toNull: NullDeserializer,
-  toDate: toNamedDeserializer(toDateDef),
-  toJsonObject: toNamedDeserializer(toJsonObjectDef),
-  toBoolean: toNamedDeserializer(toBooleanObjectDef),
-  decimalToNumber: toNamedDeserializer(toStringDef).transform<number>((str) => {
+  toDate: toNamedDeserializer(deserDefinition.toDateDef),
+  toJsonObject: toNamedDeserializer(deserDefinition.toJsonObjectDef),
+  toBoolean: toNamedDeserializer(deserDefinition.toBooleanObjectDef),
+  decimalToNumber: toNamedDeserializer(deserDefinition.toStringDef).transform<number>((str) => {
     const floatResult = Number.parseFloat(str);
     const floatResultAsStr = floatResult.toString();
     if (str === (Number.isInteger(floatResult) ? floatResultAsStr + '.' : floatResultAsStr).padEnd(str.length, '0')) {
@@ -45,4 +49,11 @@ export const deser = {
       return Failure.raise(`Value '${str}' is not convertible without loss to a number`);
     }
   }),
+  toArray: <T>(elementDeserializer: NamedDeserializer<T>): NamedDeserializer<readonly T[]> => {
+    return toNamedDeserializer(deserDefinition.toArrayDef)
+      .transform((arr) =>
+        sequenceResult(arr.map((v, i) => elementDeserializer.forColumn(`_${i}`).deserialize({ [`_${i}`]: v })))
+      )
+      .mapFailure((col, messages) => [`Items in array of col '${col}' are not valid`, ...messages]);
+  },
 };
