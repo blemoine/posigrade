@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.2.0](https://github.com/blemoine/posigrade/compare/v1.1.0...v1.2.0) (2021-11-12)
+
+
+### Features
+
+* **deserializers:** add support for arrays ([b9a3c8f](https://github.com/blemoine/posigrade/commit/b9a3c8f1a1b3408d64eb8243266d29a9311b5e33))
+
 ## [1.1.0](https://github.com/blemoine/posigrade/compare/v1.0.0...v1.1.0) (2021-11-11)
 
 
