@@ -16,8 +16,8 @@ describe('toNamedDeserializer', () => {
       errorMessage: (v) => `expected error message with value ${v}`,
     });
 
-    expect(() => deser.forColumn('test_col').deserialize({ id: '123', age: 1 })).toThrow(
-      new Error("No column named 'test_col' exists in the list of cols 'id, age'")
+    expect(deser.forColumn('test_col').deserialize({ id: '123', age: 1 })).toStrictEqual(
+      Failure.raise("No column named 'test_col' exists in the list of cols 'id, age'")
     );
   });
   it('should return a Failure if the column exist but the guard return false', () => {

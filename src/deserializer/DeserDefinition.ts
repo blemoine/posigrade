@@ -67,7 +67,7 @@ export function toNamedDeserializer<T>({ guard, errorMessage }: DeserDefinition<
     (col: string) =>
       new SqlDeserializer<T>((row) => {
         if (!Object.prototype.hasOwnProperty.call(row, col)) {
-          throw new Error(`No column named '${col}' exists in the list of cols '${Object.keys(row).join(', ')}'`);
+          return Failure.raise(`No column named '${col}' exists in the list of cols '${Object.keys(row).join(', ')}'`);
         }
         const value = row[col];
         if (guard(value)) {

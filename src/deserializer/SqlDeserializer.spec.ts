@@ -1,5 +1,6 @@
 import { SqlDeserializer } from './SqlDeserializer';
 import { Failure, Success } from '../result/Result';
+import { deser } from './deserializers';
 
 describe('SqlDeserializer', () => {
   const idDeserializer = new SqlDeserializer<number>(({ id }) => {
@@ -39,20 +40,29 @@ describe('SqlDeserializer', () => {
   });
 
   describe('fromRecord', () => {
+    interface User {
+      id: number;
+      name: string;
+    }
     it('should build a record deserializer', () => {
-      const deser = SqlDeserializer.fromRecord({ myId: idDeserializer, myName: nameDeserializer });
+      const result = SqlDeserializer.fromRecord({ myId: idDeserializer, myName: nameDeserializer });
 
-      expect(deser.deserialize({ id: 5, name: 'Georges' })).toStrictEqual(Success.of({ myId: 5, myName: 'Georges' }));
+      expect(result.deserialize({ id: 5, name: 'Georges' })).toStrictEqual(Success.of({ myId: 5, myName: 'Georges' }));
     });
     it('should work an explicitly defined interface', () => {
-      interface User {
-        id: number;
-        name: string;
-      }
+      const result = SqlDeserializer.fromRecord<User>({ id: idDeserializer, name: nameDeserializer });
 
-      const deser = SqlDeserializer.fromRecord<User>({ id: idDeserializer, name: nameDeserializer });
+      expect(result.deserialize({ id: 5, name: 'Georges' })).toStrictEqual(Success.of({ id: 5, name: 'Georges' }));
+    });
+    it('should aggregates error messages', () => {
+      const result = SqlDeserializer.fromRecord<User>({ id: deser.toNumber, name: deser.toString });
 
-      expect(deser.deserialize({ id: 5, name: 'Georges' })).toStrictEqual(Success.of({ id: 5, name: 'Georges' }));
+      expect(result.deserialize({ age: 3 })).toStrictEqual(
+        new Failure([
+          "No column named 'id' exists in the list of cols 'age'",
+          "No column named 'name' exists in the list of cols 'age'",
+        ])
+      );
     });
   });
 
