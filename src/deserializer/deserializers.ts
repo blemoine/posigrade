@@ -43,7 +43,12 @@ export const deser = {
   decimalToNumber: toNamedDeserializer(deserDefinition.toStringDef).transform<number>((str) => {
     const floatResult = Number.parseFloat(str);
     const floatResultAsStr = floatResult.toString();
-    if (str === (Number.isInteger(floatResult) ? floatResultAsStr + '.' : floatResultAsStr).padEnd(str.length, '0')) {
+
+    if (Number.isInteger(floatResult) && floatResultAsStr === str) {
+      return Success.of(floatResult);
+    } else if (
+      str === (Number.isInteger(floatResult) ? floatResultAsStr + '.' : floatResultAsStr).padEnd(str.length, '0')
+    ) {
       return Success.of(floatResult);
     } else {
       return Failure.raise(`Value '${str}' is not convertible without loss to a number`);

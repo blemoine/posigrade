@@ -15,6 +15,10 @@ describe('deser', () => {
       const result = deser.decimalToNumber.forColumn('sum').deserialize({ sum: '12.00000' });
       expect(result).toStrictEqual(Success.of(12));
     });
+    it('should return the decimal string as a number if the number is an integer', () => {
+      const result = deser.decimalToNumber.forColumn('sum').deserialize({ sum: '12' });
+      expect(result).toStrictEqual(Success.of(12));
+    });
 
     it('should return a failure if the decimal string is not a number', () => {
       const result = deser.decimalToNumber.forColumn('sum').deserialize({ sum: '4notAnumber' });

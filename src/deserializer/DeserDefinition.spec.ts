@@ -4,6 +4,7 @@ import * as fc from 'fast-check';
 import { Arbitrary } from 'fast-check';
 import { SqlDeserializer } from './SqlDeserializer';
 import { arbResult } from '../result/Result.tests.helper';
+import { deser } from './deserializers';
 
 const id = <T>(x: T): T => x;
 const arbNamedSerializer = <T>(output: Arbitrary<T>): Arbitrary<NamedDeserializer<T>> =>
@@ -41,6 +42,25 @@ describe('toNamedDeserializer', () => {
 });
 
 describe('NamedDeserializer', () => {
+  describe('or', () => {
+    it('should test multiple deserializer and return the first value that works', () => {
+      const deserializer: NamedDeserializer<number | null> = deser.toNumber.or(deser.decimalToNumber).orNull();
+
+      expect(deserializer.forColumn('a').deserialize({ a: '2' })).toStrictEqual(Success.of(2));
+    });
+
+    it('should test multiple deserializer and return aggregated error if none works', () => {
+      const deserializer: NamedDeserializer<number | null> = deser.toNumber.or(deser.decimalToNumber).orNull();
+
+      expect(deserializer.forColumn('a').deserialize({ a: 'test' })).toStrictEqual(
+        new Failure([
+          "Column 'a': 'test' is not a number",
+          "Value 'test' is not convertible without loss to a number",
+          "Column 'a': 'test' is not null",
+        ])
+      );
+    });
+  });
   describe('should form a functor', () => {
     it('should respect identity', () => {
       fc.assert(

@@ -117,7 +117,7 @@ export class SqlDeserializer<T> {
     return new SqlDeserializer<T | B>((row): Result<T | B> => {
       const v1 = this.deserialize(row);
 
-      return v1.recover(() => sqlDeserializer.deserialize(row));
+      return v1.recoveWithContext(() => sqlDeserializer.deserialize(row));
     });
   }
 }

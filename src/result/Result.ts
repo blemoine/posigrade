@@ -24,6 +24,9 @@ export class Success<T> {
   recover<B>(_fn: (messages: NonEmptyArray<string>) => Result<B>): Result<T | B> {
     return this;
   }
+  recoveWithContext<B>(_fn: (messages: NonEmptyArray<string>) => Result<B>): Result<T | B> {
+    return this;
+  }
 
   zip<B>(result: Result<B>): Result<[T, B]> {
     return result.map((b) => [this.value, b]);
@@ -68,6 +71,9 @@ export class Failure<T> {
   }
   recover<B>(fn: (messages: NonEmptyArray<string>) => Result<B>): Result<T | B> {
     return fn(this.messages);
+  }
+  recoveWithContext<B>(fn: (messages: NonEmptyArray<string>) => Result<B>): Result<T | B> {
+    return fn(this.messages).mapFailure((newMessages) => [...this.messages, ...newMessages]);
   }
 
   zip<B>(result: Result<B>): Result<[T, B]> {
