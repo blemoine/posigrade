@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.3.1](https://github.com/blemoine/posigrade/compare/v1.3.0...v1.3.1) (2021-11-15)
+
+
+### Bug Fixes
+
+* **deserializer:** support of decimal integer ([4b8132c](https://github.com/blemoine/posigrade/commit/4b8132c0ee420159fd54aceb0fc9ecacbe49a8fd))
+
 ## [1.3.0](https://github.com/blemoine/posigrade/compare/v1.2.0...v1.3.0) (2021-11-13)
 
 
