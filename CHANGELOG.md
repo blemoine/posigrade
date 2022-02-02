@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0](https://github.com/blemoine/posigrade/compare/v1.4.0...v2.0.0) (2022-02-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* **deserializer:** floatToString function was renamed
+
+* **deserializer:** rename floatToString ([9f838d0](https://github.com/blemoine/posigrade/commit/9f838d0262e3d5f6d355cfc9666a68adee43e83f))
+
 ## [1.4.0](https://github.com/blemoine/posigrade/compare/v1.3.1...v1.4.0) (2022-02-02)
 
 
