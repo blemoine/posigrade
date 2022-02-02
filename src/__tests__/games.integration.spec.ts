@@ -40,6 +40,10 @@ class GameRepo {
     return Sql`INSERT INTO games(name, visible) VALUES (${name}, ${visible}) RETURNING *`.unique(gameDeserializer);
   }
 
+  findAverage(): ExecutableQuery<number> {
+    return Sql`SELECT AVG(stars) as avg FROM reviews`.unique(deser.floatStringToNumber.forColumn('avg'));
+  }
+
   findGameAndReviews(gameId: number): ExecutableQuery<GameAndReviews | null> {
     return Sql`SELECT g.id, g.name, g.visible,
                       r.id as review_id, r.stars, r.comment, r.creation_date
@@ -107,6 +111,10 @@ class GameService {
   findGameAndReview(gameId: number): Promise<GameAndReviews | null> {
     return this.sqlExecutor.run(this.gameRepo.findGameAndReviews(gameId));
   }
+
+  findAverage(): Promise<number> {
+    return this.sqlExecutor.run(this.gameRepo.findAverage());
+  }
 }
 
 describe('bands integration test', () => {
@@ -142,12 +150,15 @@ describe('bands integration test', () => {
     const darkSouls = await gameService.addGameAndReviews('Dark Souls', []);
     const bloodborne = await gameService.addGameAndReviews('Bloodborne', [
       { comment: null, creationDate: null, stars: 5 },
-      { comment: 'it is too hard', creationDate: null, stars: 3 },
+      { comment: 'it is too hard', creationDate: null, stars: 2 },
+      { comment: 'it is really too hard', creationDate: null, stars: 1 },
     ]);
 
     expect(darkSouls.reviews).toHaveLength(0);
-    expect(bloodborne.reviews).toHaveLength(2);
+    expect(bloodborne.reviews).toHaveLength(3);
     await expect(gameService.findGameAndReview(darkSouls.id)).resolves.toStrictEqual(darkSouls);
     await expect(gameService.findGameAndReview(bloodborne.id)).resolves.toStrictEqual(bloodborne);
+
+    await expect(gameService.findAverage()).resolves.toBeCloseTo(2.6666666666666, 0.0000000000001);
   });
 });

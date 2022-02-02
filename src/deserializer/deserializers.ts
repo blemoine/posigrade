@@ -40,6 +40,7 @@ export const deser = {
   toDate: toNamedDeserializer(deserDefinition.toDateDef),
   toJsonObject: toNamedDeserializer(deserDefinition.toJsonObjectDef),
   toBoolean: toNamedDeserializer(deserDefinition.toBooleanObjectDef),
+  floatStringToNumber: toNamedDeserializer(deserDefinition.toStringDef).map<number>((str) => Number.parseFloat(str)),
   decimalToNumber: toNamedDeserializer(deserDefinition.toStringDef).transform<number>((str) => {
     const floatResult = Number.parseFloat(str);
     const floatResultAsStr = floatResult.toString();
