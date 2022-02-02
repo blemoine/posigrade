@@ -41,7 +41,7 @@ class GameRepo {
   }
 
   findAverage(): ExecutableQuery<number> {
-    return Sql`SELECT AVG(stars) as avg FROM reviews`.unique(deser.floatStringToNumber.forColumn('avg'));
+    return Sql`SELECT AVG(stars) as avg FROM reviews`.unique(deser.unsafeFloatToNumber.forColumn('avg'));
   }
 
   findGameAndReviews(gameId: number): ExecutableQuery<GameAndReviews | null> {
