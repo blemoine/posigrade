@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.4.0](https://github.com/blemoine/posigrade/compare/v1.3.1...v1.4.0) (2022-02-02)
+
+
+### Features
+
+* **deser:** add deserializer for float as string ([b99a994](https://github.com/blemoine/posigrade/commit/b99a9944a976108801c57d2fdaa3fa63e25e4e9b))
+
 ### [1.3.1](https://github.com/blemoine/posigrade/compare/v1.3.0...v1.3.1) (2021-11-15)
 
 
