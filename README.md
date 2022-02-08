@@ -137,7 +137,7 @@ Simple deserializers can be used:
 ```ts
 const idDeserializer: SqlDeserializer<number> = deser.toInteger.forColumn('id');
 
-Sql`SELECT id FROM my_table`.list(idDeserializer); // deserialize to numnber[]
+Sql`SELECT id FROM my_table`.list(idDeserializer); // deserialize to number[]
 ```
 
 If something may be nullable, it should be explicit in the SqlDeserializer
